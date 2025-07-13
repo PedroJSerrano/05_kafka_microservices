@@ -21,9 +21,6 @@
     <developers>
         <developer/>
     </developers>
-    <modules>
-        <module>orders_microservice_aaaaaa</module>
-    </modules>
     <scm>
         <connection/>
         <developerConnection/>
