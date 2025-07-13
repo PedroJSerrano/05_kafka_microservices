@@ -2,6 +2,7 @@ package service;
 
 import model.MyOrder;
 
-public interface IOrderService {
+public interface IOrderControlService {
+
     void processOrder(MyOrder order);
 }

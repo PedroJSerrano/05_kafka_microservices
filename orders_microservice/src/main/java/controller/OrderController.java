@@ -1,6 +1,6 @@
 package controller;
 
-import model.Order;
+import model.MyOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +16,7 @@ public class OrderController {
     private IOrderService orderService;
 
     @PostMapping(value = "/order", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<Void> processOrder(@RequestBody Order order) {
+    public ResponseEntity<Void> processOrder(@RequestBody MyOrder order) {
         try{
             orderService.processOrder(order);
             return ResponseEntity.ok().build();
