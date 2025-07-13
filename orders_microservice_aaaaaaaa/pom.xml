@@ -9,7 +9,7 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
 
-    <artifactId>orders_microservice</artifactId>
+    <artifactId>orders_microservice_aaaaaaaaa</artifactId>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
