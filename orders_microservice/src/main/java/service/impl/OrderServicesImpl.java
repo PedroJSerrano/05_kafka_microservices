@@ -1,6 +1,6 @@
 package service.impl;
 
-import model.Order;
+import model.MyOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -17,11 +17,11 @@ public class OrderServicesImpl implements IOrderService {
     private String topic;
 
     @Autowired
-    private KafkaTemplate<String, Order> kafkaTemplate;
+    private KafkaTemplate<String, MyOrder> kafkaTemplate;
 
     @Override
-    public void processOrder(Order order) {
-        CompletableFuture<SendResult<String, Order>> future = kafkaTemplate.send(topic, order);
+    public void processOrder(MyOrder order) {
+        CompletableFuture<SendResult<String, MyOrder>> future = kafkaTemplate.send(topic, order);
         future.whenComplete((result, ex) -> {
             if (ex != null) {
                 throw new RuntimeException("Error while producing message to kafka", ex);
