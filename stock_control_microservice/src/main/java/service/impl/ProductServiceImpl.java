@@ -2,7 +2,9 @@ package service.impl;
 
 import model.Product;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import repository.ProductRepository;
@@ -35,14 +37,15 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public Mono<Void> newProduct(Product product) {
-
         return findByProductCode(product.getProductCode())
-                .switchIfEmpty(Mono.just(product)
-                        .flatMap(p -> {
-                            p.setNew(true);
-                            return productRepository.save(p);
-                        }))
-                .then();
+                .flatMap(existingProduct ->
+                        Mono.error(new ResponseStatusException(
+                                HttpStatus.CONFLICT, "Product with code " + product.getProductCode() + " already exists.")))
+                .switchIfEmpty(Mono.defer(() -> {
+                    product.setNew(true);
+                    return productRepository.save(product);
+                }))
+                .then(); // Convierte el Mono<Product> resultante de save en Mono<Void>
     }
 
     @Override
