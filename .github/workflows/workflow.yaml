@@ -1,0 +1,72 @@
+# Nombre del flujo de trabajo que aparecerá en la interfaz de GitHub Actions.
+name: Build, Compile y Test Básico (Java con Maven)
+
+# Define los eventos que activarán este flujo de trabajo.
+on:
+  # Se activa en cada 'push' a la rama 'main'.
+  push:
+    branches:
+      - master
+      - develop
+  # Se activa en cada 'pull_request' dirigido a la rama 'main'.
+  pull_request:
+    branches:
+      - master
+
+  # Permite ejecutar el workflow manualmente desde la interfaz de GitHub.
+  workflow_dispatch:
+
+# Define los trabajos (jobs) que se ejecutarán como parte de este flujo de trabajo.
+jobs:
+  # Nombre del trabajo.
+  build-and-test:
+    # Define el sistema operativo en el que se ejecutará este trabajo.
+    # 'ubuntu-latest' es una opción común y robusta.
+    runs-on: ubuntu-latest
+
+    # Define los pasos que se ejecutarán dentro de este trabajo.
+    steps:
+      # Paso 1: Checkout del código fuente del repositorio.
+      # Esto es esencial para que el flujo de trabajo pueda acceder a tus archivos.
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
+
+      # Paso 2: Configuración del entorno de lenguaje Java.
+      # Utiliza 'actions/setup-java' para configurar el JDK.
+      # Asegúrate de especificar la versión adecuada para tu proyecto Java y el gestor de paquetes (Maven en este caso).
+      - name: Configurar Java JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21' # Puedes cambiar esto a la versión de Java que necesites (e.g., '8', '11', '21')
+          distribution : 'temurin'
+          cache: 'maven' # Habilita el cache de Maven para acelerar las builds futuras
+
+      # Paso 3: Instalación de dependencias, compilación y ejecución de pruebas con Maven.
+      # 'mvn clean install' limpiará el proyecto, descargará las dependencias, compilará el código y ejecutará las pruebas.
+      # Si solo quieres compilar y testear sin instalar en el repositorio local de Maven, puedes usar 'mvn compile test'.
+      - name: Build, Compilar y Ejecutar Pruebas con Maven
+        run: mvn clean install
+
+      # =======================================================================
+      # PASO ADICIONAL: Subir los informes de las pruebas (Surefire Reports)
+      # Ahora sube los informes de TODOS los módulos del proyecto.
+      # =======================================================================
+      - name: Subir Informes de Pruebas
+        uses: actions/upload-artifact@v4
+        # Esta condición garantiza que este paso solo se ejecute si el paso de 'mvn' falla.
+        if: failure()
+        with:
+          name: surefire-reports
+          # La ruta usa un comodín (**) para encontrar los informes en cualquier subdirectorio
+          path: '**/target/surefire-reports'
+
+      # Paso 4 (Opcional): Si tienes artefactos de build que quieres guardar.
+      # Para proyectos Maven, el JAR/WAR compilado suele estar en el directorio 'target'.
+      # Esto los hará accesibles desde la pestaña 'Actions' de tu repositorio.
+      - name: Subir artefactos de build
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-artefactos-build
+          path: target/*.jar # Cambia esto si tu artefacto es un .war o tiene otro nombre/extensión
+          # Si tienes múltiples JARs o WARs, puedes usar target/*.jar o target/*.war
+          # Si solo quieres un JAR específico, especifica la ruta completa: target/your-app-name.jar
