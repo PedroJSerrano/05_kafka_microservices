@@ -11,4 +11,6 @@ public interface IProductService {
     public Mono<Void> newProduct(Product product);
     public Mono<Product> deleteProduct(int productCode);
     public Mono<Product> updateProduct(int productCode, double price);
+    public Mono<Product> updateAddStock(int productCode, int quantity);
+    public Mono<Product> updateSubtractStock(int productCode, int quantity);
 }

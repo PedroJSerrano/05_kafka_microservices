@@ -49,4 +49,18 @@ public class ProductController {
                 .map(p -> new ResponseEntity<>(p, HttpStatus.OK))
                 .switchIfEmpty(Mono.just(new ResponseEntity<>(null, HttpStatus.NOT_FOUND)));
     }
+
+    @PutMapping(value = "update/add-stock")
+    public Mono<ResponseEntity<Product>> updateAddStock(@RequestParam("productCode") int productCode, @RequestParam("quantity") int quantity) {
+        return productService.updateAddStock(productCode, quantity)
+                .map(p -> new ResponseEntity<>(p, HttpStatus.OK))
+                .switchIfEmpty(Mono.just(new ResponseEntity<>(null, HttpStatus.NOT_FOUND)));
+    }
+
+    @PutMapping(value = "update/subtract-stock")
+    public Mono<ResponseEntity<Product>> updateSubtractStock(@RequestParam("productCode") int productCode, @RequestParam("quantity") int quantity) {
+        return productService.updateSubtractStock(productCode, quantity)
+                .map(p -> new ResponseEntity<>(p, HttpStatus.OK))
+                .switchIfEmpty(Mono.just(new ResponseEntity<>(null, HttpStatus.NOT_FOUND)));
+    }
 }

@@ -9,11 +9,9 @@ import repository.ProductRepository;
 import service.IProductService;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
-public class IProductServiceImpl implements IProductService {
+public class ProductServiceImpl implements IProductService {
 
     @Autowired
     public ProductRepository productRepository;
@@ -62,5 +60,24 @@ public class IProductServiceImpl implements IProductService {
                     return productRepository.save(p);
                 });
 
+    }
+
+    @Override
+    public Mono<Product> updateAddStock(int productCode, int quantity) {
+        return findByProductCode(productCode)
+                .flatMap( p -> {
+                    p.setQuantityInStock(p.getQuantityInStock() + quantity);
+                    return productRepository.save(p);
+                });
+    }
+
+    @Override
+    public Mono<Product> updateSubtractStock(int productCode, int quantity) {
+
+        return findByProductCode(productCode)
+                .flatMap( p -> {
+                    p.setQuantityInStock(p.getQuantityInStock() - quantity);
+                    return productRepository.save(p);
+                });
     }
 }

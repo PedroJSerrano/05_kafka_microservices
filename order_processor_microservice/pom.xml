@@ -8,10 +8,11 @@
         <version>0.0.1-SNAPSHOT</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
-    <artifactId>stock_control_microservice</artifactId>
+    <groupId>pjserrano</groupId>
+    <artifactId>order_processor_microservice</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>stock_control_microservice</name>
-    <description>stock_control_microservice</description>
+    <name>order_processor_microservice</name>
+    <description>order_processor_microservice</description>
     <url/>
     <licenses>
         <license/>
@@ -36,11 +37,8 @@
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-r2dbc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.asyncer</groupId>
-            <artifactId>r2dbc-mysql</artifactId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

@@ -8,6 +8,7 @@ on:
     branches:
       - master
       - develop
+      - feature
   # Se activa en cada 'pull_request' dirigido a la rama 'main'.
   pull_request:
     branches:
