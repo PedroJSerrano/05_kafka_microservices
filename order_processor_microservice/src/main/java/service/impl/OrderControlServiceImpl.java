@@ -20,9 +20,7 @@ public class OrderControlServiceImpl implements IOrderControlService {
 
         // Usamos el cliente para actualizar el stock en el otro microservicio
         // Nota: el método updateSubtractStock debe estar implementado en StockControlClient
-        stockControlClient.updateSubtractStock(order);
-
-        System.out.println("Petición de actualización de stock enviada para el pedido: " + order);
-
+        stockControlClient.updateSubtractStock(order)
+                .subscribe();
     }
 }

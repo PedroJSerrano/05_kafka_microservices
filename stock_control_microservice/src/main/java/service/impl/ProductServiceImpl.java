@@ -73,7 +73,6 @@ public class ProductServiceImpl implements IProductService {
 
     @Override
     public Mono<Product> updateSubtractStock(int productCode, int quantity) {
-
         return findByProductCode(productCode)
                 .flatMap( p -> {
                     p.setQuantityInStock(p.getQuantityInStock() - quantity);

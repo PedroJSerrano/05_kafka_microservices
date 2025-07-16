@@ -31,7 +31,3 @@ build/
 
 ### VS Code ###
 .vscode/
-/order_processor_microservice/.gitattributes
-/order_processor_microservice/.mvn/wrapper/maven-wrapper.properties
-/order_processor_microservice/mvnw
-/order_processor_microservice/mvnw.cmd

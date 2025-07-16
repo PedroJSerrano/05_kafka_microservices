@@ -1,33 +1,39 @@
 package client;
 
 import model.MyOrder;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 @Service
 public class StockControlClient {
 
     private final WebClient webClient;
+    private final String updateSubtractStockPath;
 
-    public StockControlClient(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl("http://localhost:8000").build();
-        // Nota: la URL base debe ir en el archivo de propiedades
+    public StockControlClient(
+            @Value("${stock.control.service.base.url}") String baseUrl,
+            @Value("${stock.control.service.update.subtractStock.path}") String updateSubtractStockPath) {
+        this.webClient = WebClient.builder().baseUrl(baseUrl).build();
+        this.updateSubtractStockPath = updateSubtractStockPath;
     }
 
-    public void updateSubtractStock(MyOrder order) {
+    public Mono<Void> updateSubtractStock(MyOrder order) {
+        System.out.println("Llamando a StockControlClient para actualizar stock...");
+
         // Extrae los datos necesarios del objeto MyOrder
         int productCode = order.getCodeProductOrdered();
         int quantity = order.getQuantity();
 
-        this.webClient.put()
+        return this.webClient.put()
                 .uri(uriBuilder -> uriBuilder
-                        .path("update/subtract-stock")
+                        .path(this.updateSubtractStockPath)
                         .queryParam("productCode", productCode)
                         .queryParam("quantity", quantity)
                         .build()
                 )
                 .retrieve()
-                .bodyToMono(Void.class)
-                .block(); // O usa .subscribe() para reactivo
+                .bodyToMono(Void.class);
     }
 }
