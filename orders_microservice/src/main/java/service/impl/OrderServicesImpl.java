@@ -4,10 +4,10 @@ import model.MyOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.stereotype.Service;
 import service.IOrderService;
-
+import reactor.core.publisher.Mono;
+import org.springframework.kafka.support.SendResult;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -16,19 +16,21 @@ public class OrderServicesImpl implements IOrderService {
     @Value("${kafka.topic}")
     private String topic;
 
+    private final KafkaTemplate<String, MyOrder> kafkaTemplate;
+
     @Autowired
-    private KafkaTemplate<String, MyOrder> kafkaTemplate;
+    public OrderServicesImpl(KafkaTemplate<String, MyOrder> kafkaTemplate) {
+        this.kafkaTemplate = kafkaTemplate;
+    }
 
     @Override
-    public void processOrder(MyOrder order) {
+    public Mono<Void> processOrder(MyOrder order) {
         CompletableFuture<SendResult<String, MyOrder>> future = kafkaTemplate.send(topic, order);
-        future.whenComplete((result, ex) -> {
-            if (ex != null) {
-                throw new RuntimeException("Error while producing message to kafka", ex);
-            }
-            System.out.println("Registered order " + result.getProducerRecord().value() +
-                    " in topic " + result.getProducerRecord().topic());
 
-        });
+        return Mono.fromFuture(future)
+                .doOnSuccess(result -> System.out.println("Pedido " + result.getProducerRecord().value() +
+                        " registrado en el topic " + result.getProducerRecord().topic()))
+                .doOnError(ex -> System.err.println("Error al producir el mensaje a Kafka: " + ex.getMessage()))
+                .then(); // `then()` convierte el Mono<SendResult> en Mono<Void>
     }
 }

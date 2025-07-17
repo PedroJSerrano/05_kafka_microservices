@@ -1,7 +1,8 @@
 package service;
 
 import model.MyOrder;
+import reactor.core.publisher.Mono;
 
 public interface IOrderService {
-    void processOrder(MyOrder order);
+    Mono<Void> processOrder(MyOrder order);
 }
