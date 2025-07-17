@@ -35,3 +35,7 @@ build/
 /order_processor_microservice/.mvn/wrapper/maven-wrapper.properties
 /order_processor_microservice/mvnw
 /order_processor_microservice/mvnw.cmd
+/order_processor_microservice/pom.xml.versionsBackup
+/orders_microservice/pom.xml.versionsBackup
+/stock_control_microservice/pom.xml.versionsBackup
+/pom.xml.versionsBackup
