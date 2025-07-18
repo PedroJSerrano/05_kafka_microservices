@@ -5,17 +5,13 @@
     <parent>
         <groupId>pjserrano</groupId>
         <artifactId>kafka_microservices</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>stock_control_microservice</artifactId>
     <name>stock_control_microservice</name>
     <description>Modulo para gestionar el stock de productos y exponer una API REST reactiva</description>
-
-    <properties>
-        <java.version>21</java.version>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -48,6 +44,11 @@
         </dependency>
 
         <dependency>
+            <groupId>io.r2dbc</groupId>
+            <artifactId>r2dbc-h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
@@ -64,6 +65,15 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/model/**/*</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>

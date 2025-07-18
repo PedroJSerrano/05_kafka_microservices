@@ -5,17 +5,13 @@
     <parent>
         <groupId>pjserrano</groupId>
         <artifactId>kafka_microservices</artifactId>
-        <version>1.0.0</version>
+        <version>1.0.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>order_processor_microservice</artifactId>
     <name>order_processor_microservice</name>
     <description>Modulo para procesar pedidos desde Kafka y persistirlos en BBDD</description>
-
-    <properties>
-        <java.version>21</java.version>
-    </properties>
 
     <dependencies>
         <dependency>
@@ -39,14 +35,6 @@
             <optional>true</optional>
         </dependency>
 
-        <!--<dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-r2dbc</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.asyncer</groupId>
-            <artifactId>r2dbc-mysql</artifactId>
-        </dependency>-->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
@@ -73,6 +61,15 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/model/**/*</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
         </plugins>
     </build>
