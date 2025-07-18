@@ -13,10 +13,6 @@
     <name>orders_microservice</name>
     <description>Modulo para recibir pedidos por REST y publicarlos en Kafka</description>
 
-    <properties>
-        <java.version>21</java.version>
-    </properties>
-
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
