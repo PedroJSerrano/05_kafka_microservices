@@ -5,7 +5,7 @@
     <parent>
         <groupId>pjserrano</groupId>
         <artifactId>kafka_microservices</artifactId>
-        <version>1.0.1-SNAPSHOT</version>
+        <version>1.0.1</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -67,8 +67,7 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <configuration>
                     <excludes>
-                        <exclude>init/**/*</exclude>
-                        <exclude>model/**/*</exclude>
+                        <exclude>**/model/**/*</exclude>
                     </excludes>
                 </configuration>
             </plugin>

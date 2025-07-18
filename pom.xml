@@ -11,7 +11,7 @@
 
     <groupId>pjserrano</groupId>
     <artifactId>kafka_microservices</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
+    <version>1.0.1</version>
     <packaging>pom</packaging>
     <name>05_kafka_microservices</name>
     <description>Proyecto padre para microservicios con Kafka y Spring Boot</description>
