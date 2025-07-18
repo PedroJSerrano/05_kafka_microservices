@@ -1,14 +1,14 @@
-package service.impl;
+package com.pjserrano.stockcontrol.service.impl;
 
-import model.Product;
+import com.pjserrano.stockcontrol.model.Product;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import repository.ProductRepository;
-import service.IProductService;
+import com.pjserrano.stockcontrol.repository.ProductRepository;
+import com.pjserrano.stockcontrol.service.IProductService;
 
 import java.time.Duration;
 
@@ -43,7 +43,7 @@ public class ProductServiceImpl implements IProductService {
                                 HttpStatus.CONFLICT, "Product with code " + product.getProductCode() + " already exists.")))
                 .switchIfEmpty(Mono.defer(() -> {
                     product.setNew(true);
-                    return productRepository.save(product);
+                    return productRepository.save(product).doOnSuccess(p -> p.setNew(false));
                 }))
                 .then(); // Convierte el Mono<Product> resultante de save en Mono<Void>
     }

@@ -1,6 +1,6 @@
-package service;
+package com.pjserrano.stockcontrol.service;
 
-import model.Product;
+import com.pjserrano.stockcontrol.model.Product;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 

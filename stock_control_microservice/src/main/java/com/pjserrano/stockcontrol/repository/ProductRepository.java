@@ -1,6 +1,6 @@
-package repository;
+package com.pjserrano.stockcontrol.repository;
 
-import model.Product;
+import com.pjserrano.stockcontrol.model.Product;
 import org.springframework.data.r2dbc.repository.Modifying;
 import org.springframework.data.r2dbc.repository.Query;
 import org.springframework.data.repository.reactive.ReactiveCrudRepository;

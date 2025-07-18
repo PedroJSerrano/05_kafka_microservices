@@ -13,16 +13,16 @@ public class StockControlClient {
     private final String updateSubtractStockPath;
 
     public StockControlClient(
+            WebClient.Builder webClientBuilder,
             @Value("${stock.control.service.base.url}") String baseUrl,
             @Value("${stock.control.service.update.subtractStock.path}") String updateSubtractStockPath) {
-        this.webClient = WebClient.builder().baseUrl(baseUrl).build();
+        this.webClient = webClientBuilder.baseUrl(baseUrl).build();
         this.updateSubtractStockPath = updateSubtractStockPath;
     }
 
     public Mono<Void> updateSubtractStock(MyOrder order) {
         System.out.println("Llamando a StockControlClient para actualizar stock...");
 
-        // Extrae los datos necesarios del objeto MyOrder
         int productCode = order.getCodeProductOrdered();
         int quantity = order.getQuantity();
 
