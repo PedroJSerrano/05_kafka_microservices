@@ -72,7 +72,6 @@
                 <configuration>
                     <excludes>
                         <exclude>**/model/**/*</exclude>
-                        <exclude>**/controller/**/*</exclude>
                     </excludes>
                 </configuration>
             </plugin>

@@ -67,8 +67,7 @@
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <configuration>
                     <excludes>
-                        <exclude>init/**/*</exclude>
-                        <exclude>model/**/*</exclude>
+                        <exclude>**/model/**/*</exclude>
                     </excludes>
                 </configuration>
             </plugin>

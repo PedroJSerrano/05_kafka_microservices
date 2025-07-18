@@ -2,209 +2,256 @@ package com.pjserrano.stockcontrol.controller;
 
 import com.pjserrano.stockcontrol.model.Product;
 import com.pjserrano.stockcontrol.service.IProductService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.data.r2dbc.R2dbcDataAutoConfiguration;
-import org.springframework.boot.autoconfigure.r2dbc.R2dbcAutoConfiguration;
-import org.springframework.boot.test.autoconfigure.web.reactive.WebFluxTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 
-import static org.mockito.Mockito.when;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyDouble;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
-/*@WebFluxTest(
-        controllers = ProductController.class,
-        excludeAutoConfiguration = { // Excluir las autoconfiguraciones de R2DBC
-                R2dbcAutoConfiguration.class,
-                R2dbcDataAutoConfiguration.class
-        }
-)*/
 public class ProductControllerTest {
-/*
-    @Autowired
-    private WebTestClient webTestClient;
 
-    @MockBean
+    @Mock
     private IProductService productService;
 
-    @Test
-    void shouldReturnAllProducts() {
-        Product p1 = new Product(100, "Azucar", "Alimentacion", 1.1, 19, false);
-        Product p2 = new Product(101, "Leche", "Alimentacion", 1.5, 15, false);
-        when(productService.getProducts()).thenReturn(Flux.just(p1, p2));
+    @InjectMocks
+    private ProductController productController;
 
-        webTestClient.get().uri("/products")
-                .accept(MediaType.TEXT_EVENT_STREAM)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBodyList(Product.class)
-                .hasSize(2)
-                .contains(p1, p2);
+    @BeforeEach
+    void setUp() {
+        MockitoAnnotations.openMocks(this);
     }
 
     @Test
-    void shouldReturnProductsByCategory() {
-        Product p1 = new Product(100, "Azucar", "Alimentacion", 1.1, 19, false);
-        when(productService.getProductsByCategory("Alimentacion")).thenReturn(Flux.just(p1));
+    void testGetProducts() {
+        Product product1 = new Product(1, "Laptop", "Electronics", 1200.0, 10, false);
+        Product product2 = new Product(2, "Mouse", "Electronics", 25.0, 50, false);
+        Flux<Product> productsFlux = Flux.just(product1, product2);
 
-        webTestClient.get().uri("/products/category?category=Alimentacion")
-                .accept(MediaType.TEXT_EVENT_STREAM)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBodyList(Product.class)
-                .hasSize(1)
-                .contains(p1);
+        when(productService.getProducts()).thenReturn(productsFlux);
+
+        Flux<Product> result = productController.getProducts();
+
+        StepVerifier.create(result)
+                .expectNext(product1)
+                .expectNext(product2)
+                .verifyComplete();
+
+        verify(productService, times(1)).getProducts();
     }
 
     @Test
-    void shouldReturnEmptyListWhenCategoryNotFound() {
-        when(productService.getProductsByCategory(anyString())).thenReturn(Flux.empty());
+    void testGetProductsByCategory() {
+        String category = "Electronics";
+        Product product1 = new Product(1, "Laptop", "Electronics", 1200.0, 10, false);
+        Product product2 = new Product(2, "Mouse", "Electronics", 25.0, 50, false);
+        Flux<Product> productsFlux = Flux.just(product1, product2);
 
-        webTestClient.get().uri("/products/category?category=NonExistentCategory")
-                .accept(MediaType.TEXT_EVENT_STREAM)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBodyList(Product.class)
-                .hasSize(0);
+        when(productService.getProductsByCategory(category)).thenReturn(productsFlux);
+
+        Flux<Product> result = productController.getProductsByCategory(category);
+
+        StepVerifier.create(result)
+                .expectNext(product1)
+                .expectNext(product2)
+                .verifyComplete();
+
+        verify(productService, times(1)).getProductsByCategory(category);
     }
 
     @Test
-    void shouldReturnProductByCode() {
-        Product product = new Product(100, "Azucar", "Alimentacion", 1.1, 19, false);
-        when(productService.findByProductCode(100)).thenReturn(Mono.just(product));
+    void testFindByProductCodeFound() {
+        int productCode = 1;
+        Product product = new Product(productCode, "Laptop", "Electronics", 1200.0, 10, false);
 
-        webTestClient.get().uri("/product?productCode=100")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(Product.class)
-                .isEqualTo(product);
+        when(productService.findByProductCode(productCode)).thenReturn(Mono.just(product));
+
+        Mono<Product> resultMono = productController.findByProductCode(productCode);
+
+        StepVerifier.create(resultMono)
+                .expectNext(product)
+                .verifyComplete();
+
+        verify(productService, times(1)).findByProductCode(productCode);
     }
 
     @Test
-    void shouldReturnNotFoundWhenProductCodeDoesNotExist() {
-        when(productService.findByProductCode(anyInt())).thenReturn(Mono.empty());
+    void testFindByProductCodeNotFound() {
+        int productCode = 999;
 
-        webTestClient.get().uri("/product?productCode=999")
-                .exchange()
-                .expectStatus().isNotFound();
+        when(productService.findByProductCode(productCode)).thenReturn(Mono.empty());
+
+        Mono<Product> resultMono = productController.findByProductCode(productCode);
+
+        StepVerifier.create(resultMono)
+                .expectErrorMatches(throwable ->
+                        throwable instanceof ResponseStatusException &&
+                                ((ResponseStatusException) throwable).getStatusCode() == HttpStatus.NOT_FOUND &&
+                                "Producto no encontrado".equals(((ResponseStatusException) throwable).getReason()))
+                .verify();
+
+        verify(productService, times(1)).findByProductCode(productCode);
     }
 
     @Test
-    void shouldCreateNewProduct() {
-        Product newProduct = new Product(999, "New Product", "Category", 10.0, 5, true);
+    void testNewProductSuccess() {
+        Product newProduct = new Product(3, "Keyboard", "Peripherals", 75.0, 20, true);
+
         when(productService.newProduct(any(Product.class))).thenReturn(Mono.empty());
 
-        webTestClient.post().uri("/add")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(newProduct)
-                .exchange()
-                .expectStatus().isCreated()
-                .expectBody().isEmpty();
+        Mono<ResponseEntity<Void>> responseMono = productController.newProduct(newProduct);
+
+        StepVerifier.create(responseMono)
+                .expectNextMatches(response -> response.getStatusCode() == HttpStatus.CREATED)
+                .verifyComplete();
+
+        verify(productService, times(1)).newProduct(newProduct);
     }
 
     @Test
-    void shouldReturnConflictWhenProductAlreadyExists() {
-        Product existingProduct = new Product(100, "Existing Product", "Category", 10.0, 5, true);
-        when(productService.newProduct(any(Product.class)))
-                .thenReturn(Mono.error(new ResponseStatusException(HttpStatus.CONFLICT, "Product with code 100 already exists.")));
+    void testDeleteProductSuccess() {
+        int productCode = 1;
+        Product productToDelete = new Product(productCode, "Laptop", "Electronics", 1200.0, 10, false);
 
-        webTestClient.post().uri("/add")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(existingProduct)
-                .exchange()
-                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+        when(productService.deleteProduct(productCode)).thenReturn(Mono.just(productToDelete));
+
+        Mono<ResponseEntity<Void>> responseMono = productController.deleteProduct(productCode);
+
+        StepVerifier.create(responseMono)
+                .expectNextMatches(response -> response.getStatusCode() == HttpStatus.NO_CONTENT)
+                .verifyComplete();
+
+        verify(productService, times(1)).deleteProduct(productCode);
     }
 
     @Test
-    void shouldDeleteProductSuccessfully() {
-        Product deletedProduct = new Product(100, "Azucar", "Alimentacion", 1.1, 19, false);
-        when(productService.deleteProduct(100)).thenReturn(Mono.just(deletedProduct));
+    void testDeleteProductNotFound() {
+        int productCode = 999;
 
-        webTestClient.delete().uri("/delete?productCode=100")
-                .exchange()
-                .expectStatus().isNoContent()
-                .expectBody().isEmpty();
+        when(productService.deleteProduct(productCode)).thenReturn(Mono.empty());
+
+        Mono<ResponseEntity<Void>> responseMono = productController.deleteProduct(productCode);
+
+        StepVerifier.create(responseMono)
+                .expectNextMatches(response -> response.getStatusCode() == HttpStatus.NOT_FOUND)
+                .verifyComplete();
+
+        verify(productService, times(1)).deleteProduct(productCode);
     }
 
     @Test
-    void shouldReturnNotFoundWhenDeletingNonExistentProduct() {
-        when(productService.deleteProduct(anyInt())).thenReturn(Mono.empty());
+    void testUpdateProductPriceSuccess() {
+        int productCode = 1;
+        double newPrice = 1250.0;
+        Product updatedProduct = new Product(productCode, "Laptop", "Electronics", newPrice, 10, false);
 
-        webTestClient.delete().uri("/delete?productCode=999")
-                .exchange()
-                .expectStatus().isNotFound()
-                .expectBody().isEmpty();
+        when(productService.updateProduct(productCode, newPrice)).thenReturn(Mono.just(updatedProduct));
+
+        Mono<ResponseEntity<Product>> responseMono = productController.updateProduct(productCode, newPrice);
+
+        StepVerifier.create(responseMono)
+                .expectNextMatches(response ->
+                        response.getStatusCode() == HttpStatus.OK &&
+                                response.getBody() != null &&
+                                response.getBody().getProductCode() == productCode &&
+                                response.getBody().getUnitaryProductPrice() == newPrice) // Usar getUnitaryProductPrice()
+                .verifyComplete();
+
+        verify(productService, times(1)).updateProduct(productCode, newPrice);
     }
 
     @Test
-    void shouldUpdateProductPrice() {
-        Product updatedProduct = new Product(100, "Azucar", "Alimentacion", 15.0, 19, false);
-        when(productService.updateProduct(100, 15.0)).thenReturn(Mono.just(updatedProduct));
+    void testUpdateProductPriceNotFound() {
+        int productCode = 999;
+        double newPrice = 1250.0;
 
-        webTestClient.put().uri("/update/price?productCode=100&price=15.0")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(Product.class)
-                .isEqualTo(updatedProduct);
+        when(productService.updateProduct(productCode, newPrice)).thenReturn(Mono.empty());
+
+        Mono<ResponseEntity<Product>> responseMono = productController.updateProduct(productCode, newPrice);
+
+        StepVerifier.create(responseMono)
+                .expectNextMatches(response -> response.getStatusCode() == HttpStatus.NOT_FOUND)
+                .verifyComplete();
+
+        verify(productService, times(1)).updateProduct(productCode, newPrice);
     }
 
     @Test
-    void shouldReturnNotFoundWhenUpdatingPriceForNonExistentProduct() {
-        when(productService.updateProduct(anyInt(), anyDouble())).thenReturn(Mono.empty());
+    void testUpdateAddStockSuccess() {
+        int productCode = 1;
+        int quantity = 5;
+        Product updatedProduct = new Product(productCode, "Laptop", "Electronics", 1200.0, 15, false);
 
-        webTestClient.put().uri("/update/price?productCode=999&price=15.0")
-                .exchange()
-                .expectStatus().isNotFound();
+        when(productService.updateAddStock(productCode, quantity)).thenReturn(Mono.just(updatedProduct));
+
+        Mono<ResponseEntity<Product>> responseMono = productController.updateAddStock(productCode, quantity);
+
+        StepVerifier.create(responseMono)
+                .expectNextMatches(response ->
+                        response.getStatusCode() == HttpStatus.OK &&
+                                response.getBody() != null &&
+                                response.getBody().getQuantityInStock() == 15) // Usar getQuantityInStock()
+                .verifyComplete();
+
+        verify(productService, times(1)).updateAddStock(productCode, quantity);
     }
 
     @Test
-    void shouldAddStockToProduct() {
-        Product updatedProduct = new Product(100, "Azucar", "Alimentacion", 1.1, 29, false);
-        when(productService.updateAddStock(100, 10)).thenReturn(Mono.just(updatedProduct));
+    void testUpdateAddStockNotFound() {
+        int productCode = 999;
+        int quantity = 5;
 
-        webTestClient.put().uri("/update/add-stock?productCode=100&quantity=10")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(Product.class)
-                .isEqualTo(updatedProduct);
+        when(productService.updateAddStock(productCode, quantity)).thenReturn(Mono.empty());
+
+        Mono<ResponseEntity<Product>> responseMono = productController.updateAddStock(productCode, quantity);
+
+        StepVerifier.create(responseMono)
+                .expectNextMatches(response -> response.getStatusCode() == HttpStatus.NOT_FOUND)
+                .verifyComplete();
+
+        verify(productService, times(1)).updateAddStock(productCode, quantity);
     }
 
     @Test
-    void shouldReturnNotFoundWhenAddingStockToNonExistentProduct() {
-        when(productService.updateAddStock(anyInt(), anyInt())).thenReturn(Mono.empty());
+    void testUpdateSubtractStockSuccess() {
+        int productCode = 1;
+        int quantity = 5;
+        Product updatedProduct = new Product(productCode, "Laptop", "Electronics", 1200.0, 5, false);
 
-        webTestClient.put().uri("/update/add-stock?productCode=999&quantity=10")
-                .exchange()
-                .expectStatus().isNotFound();
+        when(productService.updateSubtractStock(productCode, quantity)).thenReturn(Mono.just(updatedProduct));
+
+        Mono<ResponseEntity<Product>> responseMono = productController.updateSubtractStock(productCode, quantity);
+
+        StepVerifier.create(responseMono)
+                .expectNextMatches(response ->
+                        response.getStatusCode() == HttpStatus.OK &&
+                                response.getBody() != null &&
+                                response.getBody().getQuantityInStock() == 5) // Usar getQuantityInStock()
+                .verifyComplete();
+
+        verify(productService, times(1)).updateSubtractStock(productCode, quantity);
     }
 
     @Test
-    void shouldSubtractStockFromProduct() {
-        Product updatedProduct = new Product(100, "Azucar", "Alimentacion", 1.1, 9, false);
-        when(productService.updateSubtractStock(100, 10)).thenReturn(Mono.just(updatedProduct));
+    void testUpdateSubtractStockNotFound() {
+        int productCode = 999;
+        int quantity = 5;
 
-        webTestClient.put().uri("/update/subtract-stock?productCode=100&quantity=10")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(Product.class)
-                .isEqualTo(updatedProduct);
+        when(productService.updateSubtractStock(productCode, quantity)).thenReturn(Mono.empty());
+
+        Mono<ResponseEntity<Product>> responseMono = productController.updateSubtractStock(productCode, quantity);
+
+        StepVerifier.create(responseMono)
+                .expectNextMatches(response -> response.getStatusCode() == HttpStatus.NOT_FOUND)
+                .verifyComplete();
+
+        verify(productService, times(1)).updateSubtractStock(productCode, quantity);
     }
-
-    @Test
-    void shouldReturnNotFoundWhenSubtractingStockFromNonExistentProduct() {
-        when(productService.updateSubtractStock(anyInt(), anyInt())).thenReturn(Mono.empty());
-
-        webTestClient.put().uri("/update/subtract-stock?productCode=999&quantity=10")
-                .exchange()
-                .expectStatus().isNotFound();
-    }*/
 }
