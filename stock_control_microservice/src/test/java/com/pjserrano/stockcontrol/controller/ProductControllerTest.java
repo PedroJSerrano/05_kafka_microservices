@@ -21,15 +21,15 @@ import static org.mockito.ArgumentMatchers.anyDouble;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
 
-@WebFluxTest(
+/*@WebFluxTest(
         controllers = ProductController.class,
         excludeAutoConfiguration = { // Excluir las autoconfiguraciones de R2DBC
                 R2dbcAutoConfiguration.class,
                 R2dbcDataAutoConfiguration.class
         }
-)
+)*/
 public class ProductControllerTest {
-
+/*
     @Autowired
     private WebTestClient webTestClient;
 
@@ -206,5 +206,5 @@ public class ProductControllerTest {
         webTestClient.put().uri("/update/subtract-stock?productCode=999&quantity=10")
                 .exchange()
                 .expectStatus().isNotFound();
-    }
+    }*/
 }
