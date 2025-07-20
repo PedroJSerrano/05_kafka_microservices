@@ -9,4 +9,7 @@ public interface ShipmentsRepository extends ReactiveCrudRepository<Shipments, I
 
     @Query("SELECT * FROM shipments WHERE status = 'PENDING'")
     Flux<Shipments> findPendingShipments();
+
+    @Query("SELECT * FROM shipments WHERE status = ?")
+    Flux<Shipments> findShipmentsByStatus(String status);
 }

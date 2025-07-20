@@ -50,7 +50,7 @@ public class ShipmentsServiceImplTest {
     }
 
     @Test
-    public void getPendingShipments() {
+    void getPendingShipments() {
         when(shipmentsRepository.findPendingShipments()).thenReturn(Flux.just(shipment1, shipment2));
 
         StepVerifier.create(shipmentsService.getPendingShipments())
@@ -59,5 +59,14 @@ public class ShipmentsServiceImplTest {
                 .verifyComplete();
 
         verify(shipmentsRepository).findPendingShipments();
+    }
+
+    @Test
+    void getShipmentsByStatus_shipped() {
+        when(shipmentsRepository.findShipmentsByStatus(ShipmentStatus.SHIPPED.getStatus())).thenReturn(Flux.just(shipment3));
+        StepVerifier.create(shipmentsService.getShipmentsByStatus(ShipmentStatus.SHIPPED.getStatus()))
+                .expectNext(shipment3)
+                .verifyComplete();
+        verify(shipmentsRepository).findShipmentsByStatus(ShipmentStatus.SHIPPED.getStatus());
     }
 }

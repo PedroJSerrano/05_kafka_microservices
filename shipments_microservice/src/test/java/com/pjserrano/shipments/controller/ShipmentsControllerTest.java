@@ -8,7 +8,6 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
@@ -18,7 +17,7 @@ import java.time.LocalDateTime;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class ShipmentsControllerTest {
+class ShipmentsControllerTest {
 
     @InjectMocks
     private ShipmentsController shipmentsController;
@@ -27,8 +26,27 @@ public class ShipmentsControllerTest {
     private IShipmentsService shipmentsService;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         MockitoAnnotations.openMocks(this);
+    }
+
+    @Test
+    void getShipments() {
+        Shipments shipment1 = new Shipments(1, 1, LocalDateTime.now(), "Direccion", ShipmentStatus.PENDING.getStatus(), true);
+        Shipments shipment2 = new Shipments(2, 2, LocalDateTime.now(), "Direccion", ShipmentStatus.SHIPPED.getStatus(), true);
+        Shipments shipment3 = new Shipments(2, 2, LocalDateTime.now(), "Direccion", ShipmentStatus.DELIVERED.getStatus(), true);
+
+        when(shipmentsService.getShipments()).thenReturn(Flux.just(shipment1, shipment2, shipment3));
+
+        ResponseEntity<Flux<Shipments>> res = shipmentsController.getShipments();
+
+        StepVerifier.create(res.getBody())
+                .expectNext(shipment1)
+                .expectNext(shipment2)
+                .expectNextCount(1)
+                .verifyComplete();
+
+        verify(shipmentsService).getShipments();
     }
 
     @Test
@@ -46,5 +64,22 @@ public class ShipmentsControllerTest {
                 .verifyComplete();
 
         verify(shipmentsService).getShipments();
+    }
+
+    @Test
+    void getShipmentsByStatus() {
+        Shipments shipment1 = new Shipments(1, 1, LocalDateTime.now(), "Direccion", ShipmentStatus.SHIPPED.getStatus(), true);
+        Shipments shipment2 = new Shipments(2, 2, LocalDateTime.now(), "Direccion", ShipmentStatus.SHIPPED.getStatus(), true);
+
+        when(shipmentsService.getShipmentsByStatus(ShipmentStatus.SHIPPED.getStatus())).thenReturn(Flux.just(shipment1, shipment2));
+
+        ResponseEntity<Flux<Shipments>> res = shipmentsController.getShipmentsByStatus(ShipmentStatus.SHIPPED.getStatus());
+
+        StepVerifier.create(res.getBody())
+                .expectNext(shipment1)
+                .expectNextCount(1)
+                .verifyComplete();
+
+        verify(shipmentsService).getShipmentsByStatus(ShipmentStatus.SHIPPED.getStatus());
     }
 }

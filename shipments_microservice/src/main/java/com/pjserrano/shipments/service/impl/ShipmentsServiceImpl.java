@@ -26,4 +26,11 @@ public class ShipmentsServiceImpl implements IShipmentsService {
     public Flux<Shipments> getPendingShipments() {
         return this.shipmentsRepository.findPendingShipments();
     }
+
+    @Override
+    public Flux<Shipments> getShipmentsByStatus(String status) {
+        return this.shipmentsRepository.findShipmentsByStatus(status);
+    }
+
+
 }
