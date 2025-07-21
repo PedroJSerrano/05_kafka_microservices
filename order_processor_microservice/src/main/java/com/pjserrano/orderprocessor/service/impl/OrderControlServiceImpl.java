@@ -1,11 +1,11 @@
 package com.pjserrano.orderprocessor.service.impl;
 
 import com.pjserrano.orderprocessor.client.StockControlClient;
-import com.pjserrano.orderprocessor.model.MyOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
 import com.pjserrano.orderprocessor.service.IOrderControlService;
+import pjserrano.common.model.MyOrder;
 
 @Service
 public class OrderControlServiceImpl implements IOrderControlService {

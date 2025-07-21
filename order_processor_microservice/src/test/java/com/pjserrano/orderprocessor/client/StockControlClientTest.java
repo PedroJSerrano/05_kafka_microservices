@@ -1,13 +1,12 @@
 package com.pjserrano.orderprocessor.client;
 
-import com.pjserrano.orderprocessor.client.StockControlClient;
-import com.pjserrano.orderprocessor.model.MyOrder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.reactive.function.client.WebClient;
+import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;

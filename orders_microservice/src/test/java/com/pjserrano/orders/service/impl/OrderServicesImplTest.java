@@ -1,7 +1,6 @@
 package com.pjserrano.orders.service.impl;
 
 import com.pjserrano.orders.OrderApplication;
-import com.pjserrano.orders.model.MyOrder;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -13,6 +12,7 @@ import org.springframework.kafka.test.EmbeddedKafkaBroker; // Nuevo import
 import org.springframework.kafka.test.utils.KafkaTestUtils;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.TestPropertySource;
+import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -35,8 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(classes = OrderApplication.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
-@EmbeddedKafka(partitions = 1, brokerProperties = { "listeners=PLAINTEXT://localhost:9092", "port=9092" },
-        topics = "topicOrders")
+@EmbeddedKafka(partitions = 1, topics = "topicOrders")
 @TestPropertySource(properties = "kafka.topic=topicOrders")
 class OrderServicesImplTest {
 

@@ -1,11 +1,11 @@
 package com.pjserrano.orders.service.impl;
 
-import com.pjserrano.orders.model.MyOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import com.pjserrano.orders.service.IOrderService;
+import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Mono;
 import org.springframework.kafka.support.SendResult;
 import java.util.concurrent.CompletableFuture;

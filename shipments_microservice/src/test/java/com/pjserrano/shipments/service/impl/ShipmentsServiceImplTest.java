@@ -6,19 +6,22 @@ import com.pjserrano.shipments.repository.ShipmentsRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
 
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class ShipmentsServiceImplTest {
+class ShipmentsServiceImplTest {
 
     @InjectMocks
     private ShipmentsServiceImpl shipmentsService;
@@ -29,12 +32,15 @@ public class ShipmentsServiceImplTest {
     private Shipments shipment1;
     private Shipments shipment2;
     private Shipments shipment3;
+    private MyOrder testOrder;
 
     @BeforeEach
-    public void setUp() {
-        shipment1 = new Shipments(1, 1, LocalDateTime.now(), "Direccion", ShipmentStatus.PENDING.getStatus(), true);
-        shipment2 = new Shipments(2, 2, LocalDateTime.now(), "Direccion", ShipmentStatus.PENDING.getStatus(), true);
-        shipment3 = new Shipments(3, 3, LocalDateTime.now(), "Direccion", ShipmentStatus.SHIPPED.getStatus(), true);
+    void setUp() {
+        shipment1 = new Shipments(1, 1, LocalDateTime.now(), "Address 1", ShipmentStatus.PENDING.getStatus(), true);
+        shipment2 = new Shipments(2, 2, LocalDateTime.now(), "Address 2", ShipmentStatus.PENDING.getStatus(), true);
+        shipment3 = new Shipments(3, 3, LocalDateTime.now(), "Address 3", ShipmentStatus.SHIPPED.getStatus(), true);
+
+        testOrder = new MyOrder(1, "ProductA", 10, "Address1");
     }
 
     @Test
@@ -68,5 +74,26 @@ public class ShipmentsServiceImplTest {
                 .expectNext(shipment3)
                 .verifyComplete();
         verify(shipmentsRepository).findShipmentsByStatus(ShipmentStatus.SHIPPED.getStatus());
+    }
+
+    @Test
+    void saveShipments_shouldMapAndSaveOrder() {
+        when(shipmentsRepository.save(any(Shipments.class)))
+                .thenReturn(Mono.just(new Shipments(
+                        1,
+                        testOrder.getCodeProductOrdered(),
+                        LocalDateTime.now(),
+                        testOrder.getAddress(),
+                        ShipmentStatus.PENDING.getStatus(),
+                        true
+                )));
+
+        Mono<Void> resultMono = shipmentsService.saveShipments(testOrder);
+
+        StepVerifier.create(resultMono)
+                .verifyComplete();
+
+        ArgumentCaptor<Shipments> shipmentCaptor = ArgumentCaptor.forClass(Shipments.class);
+        verify(shipmentsRepository).save(shipmentCaptor.capture());
     }
 }

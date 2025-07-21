@@ -1,6 +1,5 @@
 package com.pjserrano.orders.controller;
 
-import com.pjserrano.orders.model.MyOrder;
 import com.pjserrano.orders.service.IOrderService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Mono;
 
 import static org.mockito.Mockito.*;

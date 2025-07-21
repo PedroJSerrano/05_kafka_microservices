@@ -21,7 +21,7 @@ public class Shipments implements Persistable<Integer> {
 
     @Id
     @Column("shipId")
-    private int shipId;
+    private Integer shipId;
 
     @Column("productCode")
     private int productCode;

@@ -2,7 +2,6 @@ package com.pjserrano.shipments.controller;
 
 import com.pjserrano.shipments.model.Shipments;
 import com.pjserrano.shipments.service.IShipmentsService;
-import lombok.Getter;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
