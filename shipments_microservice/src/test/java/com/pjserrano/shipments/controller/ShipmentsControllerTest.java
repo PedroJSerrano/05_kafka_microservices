@@ -54,7 +54,7 @@ class ShipmentsControllerTest {
         Shipments shipment1 = new Shipments(1, 1, LocalDateTime.now(), "Direccion", ShipmentStatus.PENDING.getStatus(), true);
         Shipments shipment2 = new Shipments(2, 2, LocalDateTime.now(), "Direccion", ShipmentStatus.PENDING.getStatus(), true);
 
-        when(shipmentsService.getShipments()).thenReturn(Flux.just(shipment1, shipment2));
+        when(shipmentsService.getPendingShipments()).thenReturn(Flux.just(shipment1, shipment2));
 
         ResponseEntity<Flux<Shipments>> res = shipmentsController.getPendingShipments();
 
@@ -63,7 +63,7 @@ class ShipmentsControllerTest {
                 .expectNextCount(1)
                 .verifyComplete();
 
-        verify(shipmentsService).getShipments();
+        verify(shipmentsService).getPendingShipments();
     }
 
     @Test
