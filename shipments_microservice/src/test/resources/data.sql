@@ -1,4 +1,4 @@
-INSERT INTO shipments (`shipId`, `productCode`, `orderDate`, `adress`, `status`) VALUES
+INSERT INTO shipments (shipId, productCode, orderDate, adress, status) VALUES
 ('1', '101', '2025-07-20 00:00:00', 'Calle 1', 'PENDING'),
 ('2', '102', '2025-07-19 00:00:00', 'Calle 2', 'PENDING'),
 ('3', '103', '2025-07-20 00:00:00', 'Calle 3', 'DELIVERED'),
