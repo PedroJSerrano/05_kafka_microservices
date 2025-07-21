@@ -1,6 +1,6 @@
 package com.pjserrano.orders.service;
 
-import com.pjserrano.orders.model.MyOrder;
+import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Mono;
 
 public interface IOrderService {

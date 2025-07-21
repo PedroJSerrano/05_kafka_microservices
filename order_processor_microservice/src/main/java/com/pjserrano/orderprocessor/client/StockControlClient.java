@@ -1,9 +1,9 @@
 package com.pjserrano.orderprocessor.client;
 
-import com.pjserrano.orderprocessor.model.MyOrder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Mono;
 
 @Service

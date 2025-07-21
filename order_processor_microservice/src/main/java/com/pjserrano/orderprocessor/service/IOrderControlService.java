@@ -1,6 +1,6 @@
 package com.pjserrano.orderprocessor.service;
 
-import com.pjserrano.orderprocessor.model.MyOrder;
+import pjserrano.common.model.MyOrder;
 
 public interface IOrderControlService {
 
