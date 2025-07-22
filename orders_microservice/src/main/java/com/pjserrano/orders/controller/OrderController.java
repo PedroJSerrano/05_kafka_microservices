@@ -1,6 +1,5 @@
 package com.pjserrano.orders.controller;
 
-import com.pjserrano.orders.model.MyOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -9,10 +8,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import com.pjserrano.orders.service.IOrderService;
+import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Mono; // Importar Mono
+
+import java.util.logging.Logger;
 
 @RestController
 public class OrderController {
+
+    private final Logger log = Logger.getLogger(getClass().getName());
 
     private final IOrderService orderService;
 
@@ -28,7 +32,7 @@ public class OrderController {
         return orderService.processOrder(order)
                 .thenReturn(ResponseEntity.ok().<Void>build())
                 .onErrorResume(e -> { // Manejo de errores reactivo
-                    System.err.println("Error al procesar el pedido: " + e.getMessage());
+                    log.severe("Error al procesar el pedido: " + e.getMessage());
                     return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
                 });
     }

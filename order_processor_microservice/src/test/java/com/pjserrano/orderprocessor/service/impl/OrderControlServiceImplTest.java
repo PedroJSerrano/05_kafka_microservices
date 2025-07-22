@@ -1,14 +1,13 @@
 package com.pjserrano.orderprocessor.service.impl;
 
 import com.pjserrano.orderprocessor.client.StockControlClient;
-import com.pjserrano.orderprocessor.model.MyOrder;
-import com.pjserrano.orderprocessor.service.impl.OrderControlServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;

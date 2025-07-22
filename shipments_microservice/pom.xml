@@ -9,16 +9,19 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>stock_control_microservice</artifactId>
-    <name>stock_control_microservice</name>
-    <description>Modulo para gestionar el stock de productos y exponer una API REST reactiva</description>
+    <artifactId>shipments_microservice</artifactId>
+    <name>shipments_microservice</name>
+    <description>Microservicio de gestion de transporte para pedidos</description>
 
     <dependencies>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <groupId>pjserrano</groupId>
+            <artifactId>common</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webflux</artifactId>
@@ -56,6 +59,11 @@
         <dependency>
             <groupId>io.projectreactor</groupId>
             <artifactId>reactor-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.kafka</groupId>
+            <artifactId>spring-kafka-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

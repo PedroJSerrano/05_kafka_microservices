@@ -1,7 +1,6 @@
 package com.pjserrano.stockcontrol.service.impl;
 
 import com.pjserrano.stockcontrol.model.Product;
-import com.pjserrano.stockcontrol.service.impl.ProductServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,8 +16,9 @@ import com.pjserrano.stockcontrol.repository.ProductRepository;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ProductServiceImplTest {
