@@ -9,9 +9,12 @@ import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Mono;
 import org.springframework.kafka.support.SendResult;
 import java.util.concurrent.CompletableFuture;
+import java.util.logging.Logger;
 
 @Service
 public class OrderServicesImpl implements IOrderService {
+
+    private final Logger log = Logger.getLogger(getClass().getName());
 
     @Value("${kafka.topic}")
     private String topic;
@@ -28,9 +31,9 @@ public class OrderServicesImpl implements IOrderService {
         CompletableFuture<SendResult<String, MyOrder>> future = kafkaTemplate.send(topic, order);
 
         return Mono.fromFuture(future)
-                .doOnSuccess(result -> System.out.println("Pedido " + result.getProducerRecord().value() +
+                .doOnSuccess(result -> log.info("Pedido " + result.getProducerRecord().value() +
                         " registrado en el topic " + result.getProducerRecord().topic()))
-                .doOnError(ex -> System.err.println("Error al producir el mensaje a Kafka: " + ex.getMessage()))
+                .doOnError(ex -> log.severe("Error al producir el mensaje a Kafka: " + ex.getMessage()))
                 .then(); // `then()` convierte el Mono<SendResult> en Mono<Void>
     }
 }
