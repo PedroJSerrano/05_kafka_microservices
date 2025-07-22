@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="03-insert-products-test-data" author="pjserrano" context="dev, local">
+        <comment>Inserta datos de prueba iniciales en la tabla 'product' para entornos de desarrollo.</comment>
+
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="100"/>
+            <column name="productName" value="Azucar"/>
+            <column name="productCategory" value="Alimentacion"/>
+            <column name="unitaryProductPrice" valueNumeric="1.1"/>
+            <column name="quantityInStock" valueNumeric="100"/>
+        </insert>
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="101"/>
+            <column name="productName" value="Leche"/>
+            <column name="productCategory" value="Alimentacion"/>
+            <column name="unitaryProductPrice" valueNumeric="1.5"/>
+            <column name="quantityInStock" valueNumeric="100"/>
+        </insert>
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="102"/>
+            <column name="productName" value="Jabon"/>
+            <column name="productCategory" value="Limpieza"/>
+            <column name="unitaryProductPrice" valueNumeric="0.89"/>
+            <column name="quantityInStock" valueNumeric="30"/>
+        </insert>
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="103"/>
+            <column name="productName" value="Mesa"/>
+            <column name="productCategory" value="Hogar"/>
+            <column name="unitaryProductPrice" valueNumeric="125"/>
+            <column name="quantityInStock" valueNumeric="30"/>
+        </insert>
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="104"/>
+            <column name="productName" value="Television"/>
+            <column name="productCategory" value="Hogar"/>
+            <column name="unitaryProductPrice" valueNumeric="650"/>
+            <column name="quantityInStock" valueNumeric="20"/>
+        </insert>
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="105"/>
+            <column name="productName" value="Huevos"/>
+            <column name="productCategory" value="Alimentacion"/>
+            <column name="unitaryProductPrice" valueNumeric="2"/>
+            <column name="quantityInStock" valueNumeric="60"/>
+        </insert>
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="106"/>
+            <column name="productName" value="Fregona"/>
+            <column name="productCategory" value="Limpieza"/>
+            <column name="unitaryProductPrice" valueNumeric="3.4"/>
+            <column name="quantityInStock" valueNumeric="30"/>
+        </insert>
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="107"/>
+            <column name="productName" value="Detergente"/>
+            <column name="productCategory" value="Limpieza"/>
+            <column name="unitaryProductPrice" valueNumeric="8.7"/>
+            <column name="quantityInStock" valueNumeric="40"/>
+        </insert>
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="108"/>
+            <column name="productName" value="Silla"/>
+            <column name="productCategory" value="Hogar"/>
+            <column name="unitaryProductPrice" valueNumeric="11"/>
+            <column name="quantityInStock" valueNumeric="50"/>
+        </insert>
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="109"/>
+            <column name="productName" value="Agua"/>
+            <column name="productCategory" value="Hogar"/>
+            <column name="unitaryProductPrice" valueNumeric="1.2"/>
+            <column name="quantityInStock" valueNumeric="10"/>
+        </insert>
+        <insert tableName="product">
+            <column name="productCode" valueNumeric="110"/>
+            <column name="productName" value="Pan"/>
+            <column name="productCategory" value="Alimentacion"/>
+            <column name="unitaryProductPrice" valueNumeric="0.85"/>
+            <column name="quantityInStock" valueNumeric="200"/>
+        </insert>
+
+    </changeSet>
+
+</databaseChangeLog>
