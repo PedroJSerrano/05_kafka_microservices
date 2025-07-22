@@ -6,9 +6,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 import pjserrano.common.model.MyOrder;
 import reactor.core.publisher.Mono;
 
+import java.util.logging.Logger;
+
 @Service
 public class StockControlClient {
 
+    private final Logger log = Logger.getLogger(getClass().getName());
     private final WebClient webClient;
     private final String updateSubtractStockPath;
 
@@ -21,7 +24,7 @@ public class StockControlClient {
     }
 
     public Mono<Void> updateSubtractStock(MyOrder order) {
-        System.out.println("Llamando a StockControlClient para actualizar stock...");
+        log.info("Llamando a StockControlClient para actualizar stock...");
 
         int productCode = order.getCodeProductOrdered();
         int quantity = order.getQuantity();

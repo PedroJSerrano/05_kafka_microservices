@@ -13,5 +13,6 @@ import org.springframework.test.context.ActiveProfiles;
 class OrderApplicationTests {
 
     @Test
-    void contextLoads() { }
+    void contextLoads() { // Test para probar que spring levanta el contexto
+    }
 }

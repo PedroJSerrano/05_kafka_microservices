@@ -14,8 +14,12 @@ import com.pjserrano.stockcontrol.service.IProductService;
 @RestController
 public class ProductController {
 
+    private final IProductService productService;
+
     @Autowired
-    IProductService productService;
+    public ProductController(IProductService productService) {
+        this.productService = productService;
+    }
 
     @GetMapping(value = "/products", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<Product> getProducts() {

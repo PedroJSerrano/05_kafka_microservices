@@ -14,7 +14,7 @@ import reactor.core.publisher.Mono;
 import static org.mockito.Mockito.*;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class OrderControllerTest {
+class OrderControllerTest {
 
     @Mock
     private IOrderService orderService;
