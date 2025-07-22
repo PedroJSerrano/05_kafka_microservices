@@ -7,7 +7,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 class ShipmentsApplicationTests {
 
     @Test
-    void contextLoads() {
+    void contextLoads() { // Test para probar que spring levanta el contexto
     }
 
 }

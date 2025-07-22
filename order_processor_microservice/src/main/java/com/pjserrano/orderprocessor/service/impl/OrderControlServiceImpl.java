@@ -10,8 +10,12 @@ import pjserrano.common.model.MyOrder;
 @Service
 public class OrderControlServiceImpl implements IOrderControlService {
 
+    private final StockControlClient stockControlClient;
+
     @Autowired
-    private StockControlClient stockControlClient;
+    public OrderControlServiceImpl(StockControlClient stockControlClient) {
+        this.stockControlClient = stockControlClient;
+    }
 
     @Override
     @KafkaListener(topics = "${kafka.topic}", groupId = "group1")

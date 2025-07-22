@@ -15,8 +15,12 @@ import java.time.Duration;
 @Service
 public class ProductServiceImpl implements IProductService {
 
+    private final ProductRepository productRepository;
+
     @Autowired
-    public ProductRepository productRepository;
+    public ProductServiceImpl(ProductRepository productRepository) {
+        this.productRepository = productRepository;
+    }
 
     @Override
     public Flux<Product> getProducts() {

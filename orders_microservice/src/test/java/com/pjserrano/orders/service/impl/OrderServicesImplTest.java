@@ -108,10 +108,10 @@ class OrderServicesImplTest {
 
             Executors.newSingleThreadExecutor().execute(() -> {
                 while (running && !Thread.currentThread().isInterrupted()) {
-                    ConsumerRecords<String, T> records = consumer.poll(Duration.ofMillis(100));
-                    if (!records.isEmpty()) {
-                        for (ConsumerRecord<String, T> record : records) {
-                            lastReceivedMessage.set(record.value());
+                    ConsumerRecords<String, T> consumrec = consumer.poll(Duration.ofMillis(100));
+                    if (!consumrec.isEmpty()) {
+                        for (ConsumerRecord<String, T> rec : consumrec) {
+                            lastReceivedMessage.set(rec.value());
                         }
                     }
                 }

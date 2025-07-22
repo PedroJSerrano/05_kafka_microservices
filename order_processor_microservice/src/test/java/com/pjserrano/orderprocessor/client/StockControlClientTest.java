@@ -11,7 +11,6 @@ import reactor.core.publisher.Mono;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,7 +59,7 @@ class StockControlClientTest {
 
         stockControlClient.updateSubtractStock(testOrder).block();
 
-        verify(webClientBuilder).baseUrl(eq(TEST_BASE_URL));
+        verify(webClientBuilder).baseUrl(TEST_BASE_URL);
         verify(webClientBuilder).build();
 
         verify(webClientMock).put();

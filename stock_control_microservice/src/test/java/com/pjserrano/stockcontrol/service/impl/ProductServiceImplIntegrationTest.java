@@ -2,8 +2,6 @@ package com.pjserrano.stockcontrol.service.impl;
 
 import com.pjserrano.stockcontrol.StockControlApplication;
 import com.pjserrano.stockcontrol.model.Product;
-import com.pjserrano.stockcontrol.service.impl.ProductServiceImpl;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,11 +31,6 @@ class ProductServiceImplIntegrationTest {
 
     @Autowired
     private ProductRepository productRepository;
-
-    @BeforeEach
-    void setUp() {
-
-    }
 
     @Test
     void newProduct_savesNew() {

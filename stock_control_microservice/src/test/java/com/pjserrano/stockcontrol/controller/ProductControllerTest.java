@@ -16,7 +16,7 @@ import reactor.test.StepVerifier;
 
 import static org.mockito.Mockito.*;
 
-public class ProductControllerTest {
+class ProductControllerTest {
 
     @Mock
     private IProductService productService;

@@ -1,7 +1,6 @@
 package com.pjserrano.stockcontrol.service.impl;
 
 import com.pjserrano.stockcontrol.model.Product;
-import com.pjserrano.stockcontrol.service.impl.ProductServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
