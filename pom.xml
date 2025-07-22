@@ -11,7 +11,7 @@
 
     <groupId>pjserrano</groupId>
     <artifactId>kafka_microservices</artifactId>
-    <version>3.0.0</version>
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>05_kafka_microservices</name>
     <description>Proyecto padre para microservicios con Kafka y Spring Boot</description>
@@ -34,7 +34,7 @@
             <dependency>
                 <groupId>pjserrano</groupId>
                 <artifactId>common</artifactId>
-                <version>3.0.0</version>
+                <version>4.0.0-SNAPSHOT</version>
             </dependency>
 
             <dependency>
