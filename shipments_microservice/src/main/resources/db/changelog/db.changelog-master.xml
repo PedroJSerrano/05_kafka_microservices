@@ -7,5 +7,7 @@
 
     <include file="db/changelog/changes/01-create-shipments-table.xml"/>
     <include file="db/changelog/changes/02-add-initial-tag.xml"/>
+    <include file="db/changelog/changes/03-insert-shipments-test-data.xml"/>
+    <include file="db/changelog/changes/04-add-insert-shipments-tag.xml"/>
 
 </databaseChangeLog>

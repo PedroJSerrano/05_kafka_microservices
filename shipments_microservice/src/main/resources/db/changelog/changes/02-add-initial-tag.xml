@@ -6,7 +6,7 @@
          http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <changeSet id="02-tag-initial-schema" author="pjserrano">
-        <tagDatabase tag="shipments table created"/>
+        <tagDatabase tag="initial_schema"/>
     </changeSet>
 
 </databaseChangeLog>
