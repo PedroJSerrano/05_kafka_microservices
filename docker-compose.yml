@@ -1,0 +1,110 @@
+version: '3.8'
+
+services:
+  # Servicio de MySQL
+  mysql-server:
+    image: mysql:8.0
+    container_name: mysql-server
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: dummy_db # Los microservicios crearán y usarán los esquemas orders_transport y products
+    ports:
+      - "3006:3306" # Mapea el puerto 3306 del contenedor al puerto 3006 de tu máquina host
+    networks:
+      - app-network
+
+  # Servicio de Zookeeper (requerido por Kafka)
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.1
+    container_name: zookeeper
+    ports:
+      - "2181:2181" # Mapea el puerto de Zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - app-network
+
+  # Servicio de Kafka
+  kafka-broker:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: kafka-broker
+    ports:
+      - "9092:9092" # Mapea el puerto 9092 del contenedor al puerto 9092 de tu máquina host (para clientes externos como CLI)
+      # No necesitamos mapear el 9093 al host, es solo para comunicación interna de Docker
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      # Internamente los microservicios se conectarán a kafka-broker:9093
+      # Externamente (desde el host, si lo necesitas) se conectarán a localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker:9093,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    depends_on:
+      - zookeeper
+    networks:
+      - app-network
+
+  # Servicios de Microservicios Spring Boot
+  stock-control-microservice:
+    build:
+      context: ./stock_control_microservice
+      dockerfile: Dockerfile
+    container_name: stock-control-microservice
+    ports:
+      - "8000:8000"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    depends_on:
+      - mysql-server
+    networks:
+      - app-network
+
+  shipments-microservice:
+    build:
+      context: ./shipments_microservice
+      dockerfile: Dockerfile
+    container_name: shipments-microservice
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    depends_on:
+      - mysql-server
+      - kafka-broker
+    networks:
+      - app-network
+
+  orders-microservice:
+    build:
+      context: ./orders_microservice
+      dockerfile: Dockerfile
+    container_name: orders-microservice
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    depends_on:
+      - kafka-broker
+    networks:
+      - app-network
+
+  order-processor-microservice:
+    build:
+      context: ./order_processor_microservice
+      dockerfile: Dockerfile
+    container_name: order-processor-microservice
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    depends_on:
+      - kafka-broker
+      - stock-control-microservice # Dependencia explícita ya que lo llama por WebClient
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
