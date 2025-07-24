@@ -2,7 +2,10 @@
 FROM openjdk:21-jdk-slim-bullseye
 
 # Define un argumento para el nombre del archivo JAR.
-ARG JAR_FILE=target/orders_microservice-*.jar
+ARG JAR_FILE=target/orders_microservice-4.0.0-SNAPSHOT.jar
+
+# Opcional: Asegúrate de que el directorio de destino existe y es el WORKDIR
+WORKDIR /app
 
 # Copia el archivo JAR de tu aplicación al directorio /app dentro de la imagen.
 COPY ${JAR_FILE} app.jar
