@@ -7,9 +7,16 @@ services:
     container_name: mysql-server
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: dummy_db # Los microservicios crearán y usarán los esquemas orders_transport y products
+    volumes:
+      - ./db/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
+      - mysql_data:/var/lib/mysql
     ports:
       - "3006:3306" # Mapea el puerto 3306 del contenedor al puerto 3006 de tu máquina host
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
@@ -22,6 +29,11 @@ services:
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "echo stat | nc localhost 2181" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
@@ -42,7 +54,13 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy
+    healthcheck: # <--- Añade esto
+      test: ["CMD", "cub kafka-ready -b localhost:9092 1 20"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - app-network
 
@@ -57,7 +75,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
     depends_on:
-      - mysql-server
+      mysql-server:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -71,8 +90,10 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
     depends_on:
-      - mysql-server
-      - kafka-broker
+      mysql-server:
+        condition: service_healthy
+      kafka-broker:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -86,7 +107,8 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
     depends_on:
-      - kafka-broker
+      kafka-broker:
+        condition: service_healthy
     networks:
       - app-network
 
@@ -100,10 +122,15 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: local
     depends_on:
-      - kafka-broker
-      - stock-control-microservice # Dependencia explícita ya que lo llama por WebClient
+      kafka-broker:
+        condition: service_healthy
+      stock-control-microservice: # Dependencia explícita ya que lo llama por WebClient
+        condition: service_healthy
     networks:
       - app-network
+
+volumes:
+  mysql_data:
 
 networks:
   app-network:
