@@ -1,4 +1,3 @@
-# Nombre del flujo de trabajo que aparecerá en la interfaz de GitHub Actions.
 name: Build, Compile, Test & SonarCloud Analysis
 
 on:
@@ -6,11 +5,13 @@ on:
     branches:
       - master
       - develop
-      - feature
+      - feature # La pipeline se activa en estas ramas
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
       - master
+      - develop
+      - feature # La pipeline se activa en estas ramas
 
   workflow_dispatch:
 
@@ -41,80 +42,42 @@ jobs:
       - name: Build, Compilar y Ejecutar Pruebas con Maven
         run: mvn -B clean verify
 
-      # NUEVO PASO: Ejecutar el SonarCloud Scan sin capturar la salida directamente
-      - name: Perform SonarCloud Scan
-        id: sonar_scan_perform # Nuevo ID para este paso
-        run: mvn -B sonar:sonar \
-          -Dsonar.projectKey=pjserrano:kafka_microservices \
-          -Dsonar.organization=pedrojserrano \
-          -Dsonar.host.url=https://sonarcloud.io \
-          -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        # Añadimos un 'continue-on-error: true' TEMPORALMENTE para que podamos extraer el ID
-        # incluso si el comando mvn falla por alguna razón (aunque no debería).
-        # Lo quitaremos una vez que la extracción del ID sea estable.
-        continue-on-error: true
-
-      # Paso para instalar jq (asegúrate de que este paso esté antes del paso de la API)
+      # Paso para instalar jq (necesario siempre si se van a usar las APIs después)
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      # NUEVO PASO: Extraer el CE Task ID del log del paso anterior
-      - name: Extract SonarCloud CE Task ID
-        id: extract_ce_task_id
+      # PASO CLAVE: Perform SonarCloud Scan y extraer CE Task ID
+      # ESTE PASO SOLO SE EJECUTA SI LA RAMA ES 'master'
+      - name: Perform SonarCloud Scan and Extract CE Task ID (Master Branch Only)
+        id: sonar_scan_process
+        if: github.ref == 'refs/heads/master' # <-- Condición clave: solo si es la rama master
         run: |
-          # Acceder al log del paso anterior usando 'github.steps.<step_id>.outputs' no es para el log en sí,
-          # sino para la salida de los comandos. Para el log completo, se accede al archivo del log.
-          # GitHub Actions guarda el log de cada paso en un archivo.
-          # Lamentablemente, no hay una forma directa y fácil de acceder al log *completo* de un paso anterior
-          # en un paso siguiente sin trucos como guardar el log en un archivo temporal o usar 'pipefail'.
-
-          # VAMOS A USAR UN TRUCO: Volver a ejecutar mvn sonar:sonar pero con un comando que
-          # solo imprima la línea del CE Task ID y luego usar esa salida.
-          # Esto es menos eficiente (doble ejecución), pero más fiable para la captura del ID.
-          # Otra opción es usar la API de GitHub para descargar logs, lo cual es más complejo.
-
-          # Volviendo a la estrategia de capturar la salida, pero asegurándonos de que
-          # el comando mvn esté bien estructurado para ello. El problema anterior pudo ser
-          # por el anidamiento del 'mvn -B sonar:sonar \ mvn -B sonar:sonar' que habías tenido.
-          # Asegurémonos que es solo una invocación.
-
-          # Intentaremos de nuevo capturar la salida pero con una invocación limpia
-          echo "Attempting to re-run Sonar Scan in silent mode to capture CE Task ID..."
-          # Ejecutamos el comando de Sonar de nuevo, pero esta vez redirigimos la salida
-          # para capturar solo la línea relevante, si aparece.
-          # El -Dsonar.log.level=ERROR podría ayudar a reducir el ruido
-          CE_TASK_ID_LINE=$(mvn -B sonar:sonar \
-            -Dsonar.projectKey=pjserrano:kafka_microservices \
-            -Dsonar.organization=pedrojserrano \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
-            | grep "More about the report processing at https://sonarcloud.io/api/ce/task?id=")
+          echo "Starting SonarCloud analysis and capturing output..."
+          mvn -B sonar:sonar -Dsonar.projectKey=pjserrano:kafka_microservices -Dsonar.organization=pedrojserrano -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }} > sonar_scan_output.log 2>&1
           
-          echo "Captured line with CE Task ID: $CE_TASK_ID_LINE"
+          echo "--- Full Sonar Scan Output (from file) ---"
+          cat sonar_scan_output.log
+          echo "------------------------------------------"
 
-          # Extraer el ID de la línea capturada
-          # Usamos cut con 'id=' como delimitador y luego el espacio, para obtener solo el ID.
-          CE_TASK_ID=$(echo "$CE_TASK_ID_LINE" | grep -o 'id=[^[:space:]]*' | cut -d'=' -f2)
+          CE_TASK_ID=$(grep "More about the report processing at https://sonarcloud.io/api/ce/task?id=" sonar_scan_output.log | grep -o 'id=[^[:space:]]*' | cut -d'=' -f2)
           
           if [ -z "$CE_TASK_ID" ]; then
-            echo "Error: Could not find CE Task Id in the output. The analysis might not have been submitted successfully, or the parsing failed."
-            # Si quieres ver el log completo de este intento si falla la extracción:
-            # mvn -B sonar:sonar -Dsonar.projectKey=pjserrano:kafka_microservices -Dsonar.organization=pedrojserrano -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+            echo "Error: Could not find CE Task ID in the SonarCloud scan output log. Check 'sonar_scan_output.log' above for issues."
             exit 1
           fi
           
-          echo "Extracted CE Task ID: $CE_TASK_ID"
+          echo "Captured CE Task ID: $CE_TASK_ID"
           echo "CE_TASK_ID=$CE_TASK_ID" >> $GITHUB_OUTPUT
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # PASO DE VERIFICACIÓN DEL QUALITY GATE (sin cambios respecto al que te di antes)
-      - name: Check SonarCloud Quality Gate Status via API
+      # PASO DE VERIFICACIÓN DEL QUALITY GATE
+      # ESTE PASO SOLO SE EJECUTA SI LA RAMA ES 'master'
+      - name: Check SonarCloud Quality Gate Status via API (Master Branch Only)
         id: check_quality_gate_api
+        if: github.ref == 'refs/heads/master' # <-- Condición clave: solo si es la rama master
         run: |
-          CE_TASK_ID="${{ steps.extract_ce_task_id.outputs.CE_TASK_ID }}" # Ahora referenciamos el nuevo paso
+          CE_TASK_ID="${{ steps.sonar_scan_process.outputs.CE_TASK_ID }}"
           
           if [ -z "$CE_TASK_ID" ]; then
             echo "Error: CE Task ID not found from previous step. Cannot check Quality Gate."
@@ -184,9 +147,11 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         shell: bash {0}
 
-      # PASO DE FALLO (igual que antes)
+      # PASO DE FALLO (solo si el Quality Gate se ejecutó y falló)
       - name: Fail on Quality Gate failure
-        if: steps.check_quality_gate_api.outputs.qualityGateStatus == 'ERROR'
+        # Aquí también necesitamos la condición de rama, porque si los pasos anteriores se saltaron,
+        # 'steps.check_quality_gate_api.outputs.qualityGateStatus' estará vacío y podría causar un fallo inesperado.
+        if: github.ref == 'refs/heads/master' && steps.check_quality_gate_api.outputs.qualityGateStatus != 'OK'
         run: |
           echo "SonarCloud Quality Gate failed! Please check the SonarCloud dashboard for details: https://sonarcloud.io/dashboard?id=pjserrano%3Akafka_microservices"
           exit 1
