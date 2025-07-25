@@ -64,16 +64,17 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # El secreto de GitHub que contiene tu SonarCloud token.
 
       # Paso 6: Esperar y verificar el Quality Gate de SonarCloud.
-      # Este paso detendrá el workflow si el Quality Gate no pasa.
       - name: Wait for SonarCloud analysis to complete and check Quality Gate
         uses: SonarSource/sonarcloud-github-action@v2.0.0
         id: check_sonar_quality_gate
         with:
-          projectKey: pjserrano:kafka_microservices # ¡IMPORTANTE! Tu Project Key exacto del pom.xml.
-          organization: pedrojserrano # ¡IMPORTANTE! Tu Organization Key exacto del pom.xml.
-          token: ${{ secrets.SONAR_TOKEN }} # Usa el secreto para autenticarse.
-        timeout-minutes: 5 # Tiempo máximo de espera para que SonarCloud procese el análisis.
-        if: success() # Solo se ejecuta si los pasos anteriores (incluido SonarCloud Scan) fueron exitosos.
+          projectBaseDir: .
+        env: # Se aseguran las variables de entorno aquí por si la acción las necesita.
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: pjserrano:kafka_microservices
+          SONAR_ORGANIZATION: pedrojserrano
+        timeout-minutes: 5
+        if: success()
 
       # Paso 7: Fallar la acción de GitHub si el Quality Gate no pasa.
       # Este paso utiliza la salida del paso anterior para decidir si el workflow debe fallar.
