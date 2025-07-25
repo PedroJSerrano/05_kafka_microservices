@@ -26,10 +26,8 @@ jobs:
     # Define el sistema operativo en el que se ejecutará este trabajo.
     runs-on: ubuntu-latest
 
-    # Define los pasos que se ejecutarán dentro de este trabajo.
     steps:
       # Paso 1: Checkout del código fuente del repositorio.
-      # Esto es esencial para que el flujo de trabajo pueda acceder a tus archivos.
       - name: Checkout del repositorio
         uses: actions/checkout@v4
         with:
@@ -37,15 +35,14 @@ jobs:
 
       # Paso 2: Configuración del entorno de lenguaje Java.
       # Utiliza 'actions/setup-java' para configurar el JDK.
-      # Asegúrate de especificar la versión adecuada para tu proyecto Java y el gestor de paquetes (Maven en este caso).
       - name: Configurar Java JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '21' # Puedes cambiar esto a la versión de Java que necesites (e.g., '8', '11', '21')
+          java-version: '21'
           distribution : 'temurin'
           cache: 'maven' # Habilita el cache de Maven para acelerar las builds futuras
 
-      # Paso 3 (NUEVO): Cache de paquetes de SonarCloud.
+      # Paso 3: Cache de paquetes de SonarCloud.
       # Esto acelera los análisis futuros descargando los componentes del SonarScanner en el runner.
       - name: Cache SonarCloud packages
         uses: actions/cache@v3
@@ -59,15 +56,14 @@ jobs:
       - name: Build, Compilar y Ejecutar Pruebas con Maven
         run: mvn -B clean verify # '-B' es para modo batch, 'clean verify' para tests y JaCoCo reports.
 
-      # Paso 5 (NUEVO): Ejecutar el análisis de SonarCloud.
-      # Se utiliza el comando que te funcionó exitosamente de forma local.
+      # Paso 5: Ejecutar el análisis de SonarCloud.
       - name: SonarCloud Scan
-        run: mvn --% -B sonar:sonar
+        run: mvn -B sonar:sonar
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Proporcionado por GitHub, útil para PR decoration.
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }} # El secreto de GitHub que contiene tu SonarCloud token.
 
-      # Paso 6 (NUEVO): Esperar y verificar el Quality Gate de SonarCloud.
+      # Paso 6: Esperar y verificar el Quality Gate de SonarCloud.
       # Este paso detendrá el workflow si el Quality Gate no pasa.
       - name: Wait for SonarCloud analysis to complete and check Quality Gate
         uses: SonarSource/sonarcloud-github-action@v2.0.0
@@ -79,23 +75,21 @@ jobs:
         timeout-minutes: 5 # Tiempo máximo de espera para que SonarCloud procese el análisis.
         if: success() # Solo se ejecuta si los pasos anteriores (incluido SonarCloud Scan) fueron exitosos.
 
-      # Paso 7 (NUEVO): Fallar la acción de GitHub si el Quality Gate no pasa.
+      # Paso 7: Fallar la acción de GitHub si el Quality Gate no pasa.
       # Este paso utiliza la salida del paso anterior para decidir si el workflow debe fallar.
       - name: Fail on Quality Gate failure
         if: steps.check_sonar_quality_gate.outputs.qualityGateStatus == 'ERROR'
         run: |
           echo "SonarCloud Quality Gate failed! Please check the SonarCloud dashboard for details: https://sonarcloud.io/dashboard?id=pjserrano%3Akafka_microservices"
-          exit 1 # Esto hará que el workflow de GitHub Actions falle.
+          exit 1
 
       # Paso 8: Subir los informes de las pruebas (Surefire Reports).
-      # Se mantiene la condición 'if: failure()' para subir los informes solo si la build/tests fallaron.
       - name: Subir Informes de Pruebas
         uses: actions/upload-artifact@v4
         # Esta condición garantiza que este paso solo se ejecute si el paso de 'mvn' falla.
         if: failure()
         with:
           name: surefire-reports
-          # La ruta usa un comodín (**) para encontrar los informes en cualquier subdirectorio
           path: '**/target/surefire-reports'
 
       # Paso 9: Subir artefactos de build.
@@ -103,6 +97,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: java-artefactos-build
-          path: target/*.jar # Cambia esto si tu artefacto es un .war o tiene otro nombre/extensión
-          # Si tienes múltiples JARs o WARs, puedes usar target/*.jar o target/*.war
-          # Si solo quieres un JAR específico, especifica la ruta completa: target/your-app-name.jar
+          path: target/*.jar
