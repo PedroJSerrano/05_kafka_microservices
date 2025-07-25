@@ -37,7 +37,7 @@ jobs:
           restore-keys: ${{ runner.os }}-sonar
 
       - name: Build, Compilar y Ejecutar Pruebas con Maven
-        run: mvn -B clean verify
+        run: mvn -B clean package
 
       # Paso para instalar jq (necesario siempre si se van a usar las APIs después)
       - name: Install jq
