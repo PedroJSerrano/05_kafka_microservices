@@ -1,5 +1,5 @@
 # Nombre del flujo de trabajo que aparecerá en la interfaz de GitHub Actions.
-name: Build, Compile y Test Básico (Java con Maven)
+name: Build, Compile, Test & SonarCloud Analysis
 
 # Define los eventos que activarán este flujo de trabajo.
 on:
@@ -11,6 +11,7 @@ on:
       - feature
   # Se activa en cada 'pull_request' dirigido a la rama 'main'.
   pull_request:
+    types: [opened, synchronize, reopened]
     branches:
       - master
 
@@ -20,54 +21,91 @@ on:
 # Define los trabajos (jobs) que se ejecutarán como parte de este flujo de trabajo.
 jobs:
   # Nombre del trabajo.
-  build-and-test:
+  build-and-test-and-sonar:
+
     # Define el sistema operativo en el que se ejecutará este trabajo.
-    # 'ubuntu-latest' es una opción común y robusta.
     runs-on: ubuntu-latest
 
-    # Define los pasos que se ejecutarán dentro de este trabajo.
     steps:
       # Paso 1: Checkout del código fuente del repositorio.
-      # Esto es esencial para que el flujo de trabajo pueda acceder a tus archivos.
       - name: Checkout del repositorio
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Necesario para que SonarScanner pueda analizar el historial de Git y el New Code.
 
       # Paso 2: Configuración del entorno de lenguaje Java.
       # Utiliza 'actions/setup-java' para configurar el JDK.
-      # Asegúrate de especificar la versión adecuada para tu proyecto Java y el gestor de paquetes (Maven en este caso).
       - name: Configurar Java JDK
         uses: actions/setup-java@v4
         with:
-          java-version: '21' # Puedes cambiar esto a la versión de Java que necesites (e.g., '8', '11', '21')
+          java-version: '21'
           distribution : 'temurin'
           cache: 'maven' # Habilita el cache de Maven para acelerar las builds futuras
 
-      # Paso 3: Instalación de dependencias, compilación y ejecución de pruebas con Maven.
-      # 'mvn clean install' limpiará el proyecto, descargará las dependencias, compilará el código y ejecutará las pruebas.
-      # Si solo quieres compilar y testear sin instalar en el repositorio local de Maven, puedes usar 'mvn compile test'.
-      - name: Build, Compilar y Ejecutar Pruebas con Maven
-        run: mvn clean install
+      # Paso 3: Cache de paquetes de SonarCloud.
+      # Esto acelera los análisis futuros descargando los componentes del SonarScanner en el runner.
+      - name: Cache SonarCloud packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
 
-      # =======================================================================
-      # PASO ADICIONAL: Subir los informes de las pruebas (Surefire Reports)
-      # Ahora sube los informes de TODOS los módulos del proyecto.
-      # =======================================================================
+      # Paso 4: Instalación de dependencias, compilación y ejecución de pruebas con Maven.
+      # Se usa 'verify' para asegurar que JaCoCo genere los informes de cobertura antes de que SonarCloud los recoja.
+      - name: Build, Compilar y Ejecutar Pruebas con Maven
+        run: mvn -B clean verify # '-B' es para modo batch, 'clean verify' para tests y JaCoCo reports.
+
+      # PASO CLAVE: SonarCloud Scan - siendo explícitos con projectKey, organization y token
+      - name: SonarCloud Scan
+        run: |
+          mvn -B sonar:sonar \
+            -Dsonar.projectKey=pjserrano:kafka_microservices \
+            -Dsonar.organization=pedrojserrano \
+            -Dsonar.host.url=https://sonarcloud.io \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: pjserrano:kafka_microservices
+          SONAR_ORGANIZATION: pedrojserrano
+          SONAR_HOST_URL: https://sonarcloud.io
+
+      # PASO DE VERIFICACIÓN DEL QUALITY GATE - USANDO LA ACCIÓN ORIGINAL CON 'args'
+      - name: Check SonarCloud Quality Gate Status
+        uses: SonarSource/sonarcloud-github-action@v2.0.0 # ¡Volvemos a esta acción y versión!
+        id: check_sonar_quality_gate
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          # Para que esta acción SOLO espere el Quality Gate, pasamos 'args: -Dsonar.qualitygate.wait=true'
+          # y también le especificamos el projectKey y organization a través de args
+          args: >
+            -Dsonar.projectKey=pjserrano:kafka_microservices
+            -Dsonar.organization=pedrojserrano
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.host.url=https://sonarcloud.io
+          projectBaseDir: .
+
+      # Paso 7: Fallar la acción de GitHub si el Quality Gate no pasa.
+      # Este paso utiliza la salida del paso anterior para decidir si el workflow debe fallar.
+      - name: Fail on Quality Gate failure
+        if: steps.check_sonar_quality_gate.outputs.qualityGateStatus == 'ERROR'
+        run: |
+          echo "SonarCloud Quality Gate failed! Please check the SonarCloud dashboard for details: https://sonarcloud.io/dashboard?id=pjserrano%3Akafka_microservices"
+          exit 1
+
+      # Paso 8: Subir los informes de las pruebas (Surefire Reports).
       - name: Subir Informes de Pruebas
         uses: actions/upload-artifact@v4
         # Esta condición garantiza que este paso solo se ejecute si el paso de 'mvn' falla.
         if: failure()
         with:
           name: surefire-reports
-          # La ruta usa un comodín (**) para encontrar los informes en cualquier subdirectorio
           path: '**/target/surefire-reports'
 
-      # Paso 4 (Opcional): Si tienes artefactos de build que quieres guardar.
-      # Para proyectos Maven, el JAR/WAR compilado suele estar en el directorio 'target'.
-      # Esto los hará accesibles desde la pestaña 'Actions' de tu repositorio.
+      # Paso 9: Subir artefactos de build.
       - name: Subir artefactos de build
         uses: actions/upload-artifact@v4
         with:
           name: java-artefactos-build
-          path: target/*.jar # Cambia esto si tu artefacto es un .war o tiene otro nombre/extensión
-          # Si tienes múltiples JARs o WARs, puedes usar target/*.jar o target/*.war
-          # Si solo quieres un JAR específico, especifica la ruta completa: target/your-app-name.jar
+          path: target/*.jar

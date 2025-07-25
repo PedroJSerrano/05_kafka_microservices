@@ -19,6 +19,9 @@
     <properties>
         <java.version>21</java.version>
         <jacoco.version>0.8.11</jacoco.version>
+        <sonar.organization>pedrojserrano</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.projectKey>pjserrano:kafka_microservices</sonar.projectKey>
     </properties>
 
     <modules>
@@ -134,6 +137,11 @@
                         <autoVersionSubmodules>true</autoVersionSubmodules>
                         <releaseProfiles>release</releaseProfiles>
                     </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>3.11.0.3922</version>
                 </plugin>
             </plugins>
         </pluginManagement>
