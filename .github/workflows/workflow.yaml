@@ -10,8 +10,6 @@ on:
     types: [opened, synchronize, reopened]
     branches:
       - master
-      - develop
-      - feature # La pipeline se activa en estas ramas
 
   workflow_dispatch:
 
