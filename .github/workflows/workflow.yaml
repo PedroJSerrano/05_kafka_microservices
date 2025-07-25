@@ -56,7 +56,7 @@ jobs:
       - name: Build, Compilar y Ejecutar Pruebas con Maven
         run: mvn -B clean verify # '-B' es para modo batch, 'clean verify' para tests y JaCoCo reports.
 
-      # PASO CLAVE: SonarCloud Scan - ¡Ahora siendo explícitos con projectKey, organization y token!
+      # PASO CLAVE: SonarCloud Scan - siendo explícitos con projectKey, organization y token
       - name: SonarCloud Scan
         run: |
           mvn -B sonar:sonar \
@@ -65,28 +65,25 @@ jobs:
             -Dsonar.host.url=https://sonarcloud.io \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }}
         env:
-          # Aunque Maven lo recibe por -Dsonar.token, lo dejamos aquí como respaldo
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          # Estas variables de entorno ya no son estrictamente necesarias aquí si se pasan por -D
-          # pero no hacen daño y pueden servir para otras herramientas si las necesitan.
           SONAR_PROJECT_KEY: pjserrano:kafka_microservices
           SONAR_ORGANIZATION: pedrojserrano
           SONAR_HOST_URL: https://sonarcloud.io
 
-
-      # PASO DE VERIFICACIÓN DEL QUALITY GATE (usando la acción específica)
+      # PASO DE VERIFICACIÓN DEL QUALITY GATE - USANDO LA ACCIÓN ORIGINAL CON 'args'
       - name: Check SonarCloud Quality Gate Status
-        uses: SonarSource/sonarcloud-quality-gate-action@latest
+        uses: SonarSource/sonarcloud-github-action@v2.0.0 # ¡Volvemos a esta acción y versión!
         id: check_sonar_quality_gate
         env:
-          # Estas son las variables de entorno que la acción 'sonarcloud-quality-gate-action' necesita.
-          # Aseguramos que el token, project key y organization estén disponibles para la acción.
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: pjserrano:kafka_microservices
-          SONAR_ORGANIZATION: pedrojserrano
-          # Opcional: Si la acción necesita la URL, aunque generalmente la infiere de SonarCloud.
-          SONAR_HOST_URL: https://sonarcloud.io
         with:
+          # Para que esta acción SOLO espere el Quality Gate, pasamos 'args: -Dsonar.qualitygate.wait=true'
+          # y también le especificamos el projectKey y organization a través de args
+          args: >
+            -Dsonar.projectKey=pjserrano:kafka_microservices
+            -Dsonar.organization=pedrojserrano
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.host.url=https://sonarcloud.io
           projectBaseDir: .
 
       # Paso 7: Fallar la acción de GitHub si el Quality Gate no pasa.
