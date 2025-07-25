@@ -3,7 +3,6 @@ name: Build, Compile, Test & SonarCloud Analysis
 on:
   push:
     branches:
-      - master
       - develop
       - feature # La pipeline se activa en estas ramas
   pull_request:
