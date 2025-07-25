@@ -1,49 +1,37 @@
-# Nombre del flujo de trabajo que aparecerá en la interfaz de GitHub Actions.
 name: Build, Compile, Test & SonarCloud Analysis
 
-# Define los eventos que activarán este flujo de trabajo.
 on:
-  # Se activa en cada 'push' a la rama 'main'.
   push:
     branches:
       - master
       - develop
-      - feature
-  # Se activa en cada 'pull_request' dirigido a la rama 'main'.
+      - feature # La pipeline se activa en estas ramas
   pull_request:
     types: [opened, synchronize, reopened]
     branches:
       - master
+      - develop
+      - feature # La pipeline se activa en estas ramas
 
-  # Permite ejecutar el workflow manualmente desde la interfaz de GitHub.
   workflow_dispatch:
 
-# Define los trabajos (jobs) que se ejecutarán como parte de este flujo de trabajo.
 jobs:
-  # Nombre del trabajo.
   build-and-test-and-sonar:
-
-    # Define el sistema operativo en el que se ejecutará este trabajo.
     runs-on: ubuntu-latest
 
     steps:
-      # Paso 1: Checkout del código fuente del repositorio.
       - name: Checkout del repositorio
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Necesario para que SonarScanner pueda analizar el historial de Git y el New Code.
+          fetch-depth: 0
 
-      # Paso 2: Configuración del entorno de lenguaje Java.
-      # Utiliza 'actions/setup-java' para configurar el JDK.
       - name: Configurar Java JDK
         uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution : 'temurin'
-          cache: 'maven' # Habilita el cache de Maven para acelerar las builds futuras
+          distribution: 'temurin'
+          cache: 'maven'
 
-      # Paso 3: Cache de paquetes de SonarCloud.
-      # Esto acelera los análisis futuros descargando los componentes del SonarScanner en el runner.
       - name: Cache SonarCloud packages
         uses: actions/cache@v3
         with:
@@ -51,59 +39,130 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      # Paso 4: Instalación de dependencias, compilación y ejecución de pruebas con Maven.
-      # Se usa 'verify' para asegurar que JaCoCo genere los informes de cobertura antes de que SonarCloud los recoja.
       - name: Build, Compilar y Ejecutar Pruebas con Maven
-        run: mvn -B clean verify # '-B' es para modo batch, 'clean verify' para tests y JaCoCo reports.
+        run: mvn -B clean verify
 
-      # PASO CLAVE: SonarCloud Scan - siendo explícitos con projectKey, organization y token
-      - name: SonarCloud Scan
+      # Paso para instalar jq (necesario siempre si se van a usar las APIs después)
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      # PASO CLAVE: Perform SonarCloud Scan y extraer CE Task ID
+      # ESTE PASO SOLO SE EJECUTA SI LA RAMA ES 'master'
+      - name: Perform SonarCloud Scan and Extract CE Task ID (Master Branch Only)
+        id: sonar_scan_process
+        if: github.ref == 'refs/heads/master' # <-- Condición clave: solo si es la rama master
         run: |
-          mvn -B sonar:sonar \
-            -Dsonar.projectKey=pjserrano:kafka_microservices \
-            -Dsonar.organization=pedrojserrano \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+          echo "Starting SonarCloud analysis and capturing output..."
+          mvn -B sonar:sonar -Dsonar.projectKey=pjserrano:kafka_microservices -Dsonar.organization=pedrojserrano -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=${{ secrets.SONAR_TOKEN }} > sonar_scan_output.log 2>&1
+          
+          echo "--- Full Sonar Scan Output (from file) ---"
+          cat sonar_scan_output.log
+          echo "------------------------------------------"
+
+          CE_TASK_ID=$(grep "More about the report processing at https://sonarcloud.io/api/ce/task?id=" sonar_scan_output.log | grep -o 'id=[^[:space:]]*' | cut -d'=' -f2)
+          
+          if [ -z "$CE_TASK_ID" ]; then
+            echo "Error: Could not find CE Task ID in the SonarCloud scan output log. Check 'sonar_scan_output.log' above for issues."
+            exit 1
+          fi
+          
+          echo "Captured CE Task ID: $CE_TASK_ID"
+          echo "CE_TASK_ID=$CE_TASK_ID" >> $GITHUB_OUTPUT
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: pjserrano:kafka_microservices
-          SONAR_ORGANIZATION: pedrojserrano
-          SONAR_HOST_URL: https://sonarcloud.io
 
-      # PASO DE VERIFICACIÓN DEL QUALITY GATE - USANDO LA ACCIÓN ORIGINAL CON 'args'
-      - name: Check SonarCloud Quality Gate Status
-        uses: SonarSource/sonarcloud-github-action@v2.0.0 # ¡Volvemos a esta acción y versión!
-        id: check_sonar_quality_gate
+      # PASO DE VERIFICACIÓN DEL QUALITY GATE
+      # ESTE PASO SOLO SE EJECUTA SI LA RAMA ES 'master'
+      - name: Check SonarCloud Quality Gate Status via API (Master Branch Only)
+        id: check_quality_gate_api
+        if: github.ref == 'refs/heads/master' # <-- Condición clave: solo si es la rama master
+        run: |
+          CE_TASK_ID="${{ steps.sonar_scan_process.outputs.CE_TASK_ID }}"
+          
+          if [ -z "$CE_TASK_ID" ]; then
+            echo "Error: CE Task ID not found from previous step. Cannot check Quality Gate."
+            exit 1
+          fi
+
+          echo "Checking Quality Gate for SonarCloud CE Task ID: $CE_TASK_ID"
+          
+          MAX_RETRIES=20
+          WAIT_SECONDS=10
+          
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i/$MAX_RETRIES: Querying SonarCloud API for task status..."
+          
+            API_RESPONSE=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+              "https://sonarcloud.io/api/ce/task?id=$CE_TASK_ID")
+          
+            echo "API Response for CE task: $API_RESPONSE"
+          
+            TASK_STATUS=$(echo "$API_RESPONSE" | jq -r '.task.status')
+          
+            if [ "$TASK_STATUS" == "SUCCESS" ]; then
+              ANALYSIS_ID=$(echo "$API_RESPONSE" | jq -r '.task.analysisId')
+              echo "Analysis ID from CE task: $ANALYSIS_ID"
+
+              if [ "$ANALYSIS_ID" == "null" ] || [ -z "$ANALYSIS_ID" ]; then
+                echo "Analysis finished, but analysisId is null/empty. Waiting for it to appear..."
+                sleep $WAIT_SECONDS
+                continue
+              fi
+
+              QUALITY_GATE_RESPONSE=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+                "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$ANALYSIS_ID")
+          
+              echo "API Response for Quality Gate: $QUALITY_GATE_RESPONSE"
+          
+              QUALITY_GATE_STATUS=$(echo "$QUALITY_GATE_RESPONSE" | jq -r '.projectStatus.status')
+
+              if [ "$QUALITY_GATE_STATUS" == "null" ] || [ -z "$QUALITY_GATE_STATUS" ]; then
+                echo "Quality Gate status not yet available, or API response malformed. Waiting..."
+                sleep $WAIT_SECONDS
+                continue
+              else
+                echo "SonarCloud analysis completed. Quality Gate Status: $QUALITY_GATE_STATUS"
+                echo "qualityGateStatus=$QUALITY_GATE_STATUS" >> $GITHUB_OUTPUT
+                break
+              fi
+
+            elif [ "$TASK_STATUS" == "PENDING" ] || [ "$TASK_STATUS" == "IN_PROGRESS" ]; then
+              echo "SonarCloud analysis is still $TASK_STATUS. Waiting..."
+              sleep $WAIT_SECONDS
+            else
+              echo "SonarCloud analysis failed on SonarCloud side with status: $TASK_STATUS"
+              ERROR_MESSAGE=$(echo "$API_RESPONSE" | jq -r '.errors[0].msg // "No specific error message."')
+              echo "SonarCloud Error: $ERROR_MESSAGE"
+              echo "qualityGateStatus=ERROR" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          
+            if [ $i -eq $MAX_RETRIES ]; then
+              echo "Max retries reached. SonarCloud analysis did not complete successfully or QG status could not be retrieved."
+              echo "qualityGateStatus=ERROR" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          done
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          # Para que esta acción SOLO espere el Quality Gate, pasamos 'args: -Dsonar.qualitygate.wait=true'
-          # y también le especificamos el projectKey y organization a través de args
-          args: >
-            -Dsonar.projectKey=pjserrano:kafka_microservices
-            -Dsonar.organization=pedrojserrano
-            -Dsonar.qualitygate.wait=true
-            -Dsonar.host.url=https://sonarcloud.io
-          projectBaseDir: .
+        shell: bash {0}
 
-      # Paso 7: Fallar la acción de GitHub si el Quality Gate no pasa.
-      # Este paso utiliza la salida del paso anterior para decidir si el workflow debe fallar.
+      # PASO DE FALLO (solo si el Quality Gate se ejecutó y falló)
       - name: Fail on Quality Gate failure
-        if: steps.check_sonar_quality_gate.outputs.qualityGateStatus == 'ERROR'
+        # Aquí también necesitamos la condición de rama, porque si los pasos anteriores se saltaron,
+        # 'steps.check_quality_gate_api.outputs.qualityGateStatus' estará vacío y podría causar un fallo inesperado.
+        if: github.ref == 'refs/heads/master' && steps.check_quality_gate_api.outputs.qualityGateStatus != 'OK'
         run: |
           echo "SonarCloud Quality Gate failed! Please check the SonarCloud dashboard for details: https://sonarcloud.io/dashboard?id=pjserrano%3Akafka_microservices"
           exit 1
 
-      # Paso 8: Subir los informes de las pruebas (Surefire Reports).
       - name: Subir Informes de Pruebas
         uses: actions/upload-artifact@v4
-        # Esta condición garantiza que este paso solo se ejecute si el paso de 'mvn' falla.
         if: failure()
         with:
           name: surefire-reports
           path: '**/target/surefire-reports'
 
-      # Paso 9: Subir artefactos de build.
       - name: Subir artefactos de build
         uses: actions/upload-artifact@v4
         with:
