@@ -56,35 +56,123 @@ jobs:
       - name: Build, Compilar y Ejecutar Pruebas con Maven
         run: mvn -B clean verify # '-B' es para modo batch, 'clean verify' para tests y JaCoCo reports.
 
-      # PASO CLAVE: SonarCloud Scan - siendo explícitos con projectKey, organization y token
-      - name: SonarCloud Scan
+      # PASO CLAVE: SonarCloud Scan y Captura del ID del Análisis (¡Más depuración!)
+      - name: SonarCloud Scan and Get Analysis ID
+        id: sonar_scan
         run: |
-          mvn -B sonar:sonar \
+          echo "Starting Maven Sonar Scan..."
+          SONAR_SCAN_OUTPUT=$(mvn -B sonar:sonar \
             -Dsonar.projectKey=pjserrano:kafka_microservices \
             -Dsonar.organization=pedrojserrano \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: pjserrano:kafka_microservices
-          SONAR_ORGANIZATION: pedrojserrano
-          SONAR_HOST_URL: https://sonarcloud.io
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }})
+          
+          echo "--- Full Sonar Scan Output ---"
+          echo "$SONAR_SCAN_OUTPUT"
+          echo "------------------------------"
+          
+          # Intento 1 de extracción del CE Task ID (el que te di antes)
+          CE_TASK_ID_METHOD1=$(echo "$SONAR_SCAN_OUTPUT" | grep -o 'id=[^[:space:]]*' | cut -d'=' -f2)
+          echo "CE Task ID (Method 1): $CE_TASK_ID_METHOD1"
 
-      # PASO DE VERIFICACIÓN DEL QUALITY GATE - USANDO LA ACCIÓN ORIGINAL CON 'args'
-      - name: Check SonarCloud Quality Gate Status
-        uses: SonarSource/sonarcloud-github-action@v2.0.0 # ¡Volvemos a esta acción y versión!
-        id: check_sonar_quality_gate
+          # Intento 2 de extracción (más robusto si el formato cambia ligeramente)
+          CE_TASK_ID_METHOD2=$(echo "$SONAR_SCAN_OUTPUT" | grep -oE 'id=[a-zA-Z0-9_-]+' | grep -oE '[a-zA-Z0-9_-]+$')
+          echo "CE Task ID (Method 2): $CE_TASK_ID_METHOD2"
+
+          # Usaremos el Método 1 como principal, si falla, usaremos el Método 2
+          if [ -n "$CE_TASK_ID_METHOD1" ]; then
+              FINAL_CE_TASK_ID="$CE_TASK_ID_METHOD1"
+          elif [ -n "$CE_TASK_ID_METHOD2" ]; then
+              FINAL_CE_TASK_ID="$CE_TASK_ID_METHOD2"
+          else
+              echo "Error: Could not find CE Task Id in SonarCloud scan output using any method."
+              exit 1
+          fi
+
+          echo "Final Captured CE Task ID for export: $FINAL_CE_TASK_ID"
+          echo "CE_TASK_ID=$FINAL_CE_TASK_ID" >> $GITHUB_OUTPUT
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          # Para que esta acción SOLO espere el Quality Gate, pasamos 'args: -Dsonar.qualitygate.wait=true'
-          # y también le especificamos el projectKey y organization a través de args
-          args: >
-            -Dsonar.projectKey=pjserrano:kafka_microservices
-            -Dsonar.organization=pedrojserrano
-            -Dsonar.qualitygate.wait=true
-            -Dsonar.host.url=https://sonarcloud.io
-          projectBaseDir: .
+
+      # Paso para instalar jq (asegúrate de que este paso esté antes del paso de la API)
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      # PASO DE VERIFICACIÓN DEL QUALITY GATE (sin cambios respecto al que te di antes, asume que CE_TASK_ID está bien)
+      - name: Check SonarCloud Quality Gate Status via API
+        id: check_quality_gate_api
+        run: |
+          CE_TASK_ID="${{ steps.sonar_scan.outputs.CE_TASK_ID }}"
+          
+          if [ -z "$CE_TASK_ID" ]; then
+            echo "Error: CE Task ID not found from previous step. Cannot check Quality Gate."
+            exit 1
+          fi
+
+          echo "Checking Quality Gate for SonarCloud CE Task ID: $CE_TASK_ID"
+          
+          MAX_RETRIES=20
+          WAIT_SECONDS=10
+          
+          for i in $(seq 1 $MAX_RETRIES); do
+            echo "Attempt $i/$MAX_RETRIES: Querying SonarCloud API for task status with token length $(echo -n "${{ secrets.SONAR_TOKEN }}" | wc -c)..." # Para depurar token
+          
+            API_RESPONSE=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+              "https://sonarcloud.io/api/ce/task?id=$CE_TASK_ID")
+          
+            echo "API Response for CE task: $API_RESPONSE"
+          
+            TASK_STATUS=$(echo "$API_RESPONSE" | jq -r '.task.status')
+          
+            if [ "$TASK_STATUS" == "SUCCESS" ]; then
+              ANALYSIS_ID=$(echo "$API_RESPONSE" | jq -r '.task.analysisId')
+              echo "Analysis ID from CE task: $ANALYSIS_ID"
+
+              if [ "$ANALYSIS_ID" == "null" ] || [ -z "$ANALYSIS_ID" ]; then
+                echo "Analysis finished, but analysisId is null/empty. Waiting for it to appear..."
+                sleep $WAIT_SECONDS
+                continue
+              fi
+
+              # Ahora, con el analysisId, consultamos el Quality Gate
+              QUALITY_GATE_RESPONSE=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+                "https://sonarcloud.io/api/qualitygates/project_status?analysisId=$ANALYSIS_ID")
+          
+              echo "API Response for Quality Gate: $QUALITY_GATE_RESPONSE"
+          
+              QUALITY_GATE_STATUS=$(echo "$QUALITY_GATE_RESPONSE" | jq -r '.projectStatus.status')
+
+              if [ "$QUALITY_GATE_STATUS" == "null" ] || [ -z "$QUALITY_GATE_STATUS" ]; then
+                echo "Quality Gate status not yet available, or API response malformed. Waiting..."
+                sleep $WAIT_SECONDS
+                continue
+              else
+                echo "SonarCloud analysis completed. Quality Gate Status: $QUALITY_GATE_STATUS"
+                echo "qualityGateStatus=$QUALITY_GATE_STATUS" >> $GITHUB_OUTPUT
+                break
+              fi
+
+            elif [ "$TASK_STATUS" == "PENDING" ] || [ "$TASK_STATUS" == "IN_PROGRESS" ]; then
+              echo "SonarCloud analysis is still $TASK_STATUS. Waiting..."
+              sleep $WAIT_SECONDS
+            else
+              echo "SonarCloud analysis failed on SonarCloud side with status: $TASK_STATUS"
+              # También podemos imprimir el mensaje de error si lo hay en la respuesta
+              ERROR_MESSAGE=$(echo "$API_RESPONSE" | jq -r '.errors[0].msg // "No specific error message."')
+              echo "SonarCloud Error: $ERROR_MESSAGE"
+              echo "qualityGateStatus=ERROR" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          
+            if [ $i -eq $MAX_RETRIES ]; then
+              echo "Max retries reached. SonarCloud analysis did not complete successfully or QG status could not be retrieved."
+              echo "qualityGateStatus=ERROR" >> $GITHUB_OUTPUT
+              exit 1
+            fi
+          done
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        shell: bash {0} # Necesitamos jq para parsear el JSON
 
       # Paso 7: Fallar la acción de GitHub si el Quality Gate no pasa.
       # Este paso utiliza la salida del paso anterior para decidir si el workflow debe fallar.
