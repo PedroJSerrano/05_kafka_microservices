@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                      http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.27.xsd">
+
+    <changeSet id="04-insert-initial-roles" author="pjserrano" context="local, dev, prod">
+        <comment>Insert initial roles into the roles table</comment>
+        <insert tableName="roles">
+            <column name="name" value="USER"/>
+        </insert>
+        <insert tableName="roles">
+            <column name="name" value="ADMIN"/>
+        </insert>
+        <insert tableName="roles">
+            <column name="name" value="OPERATOR"/>
+        </insert>
+    </changeSet>
+
+</databaseChangeLog>
