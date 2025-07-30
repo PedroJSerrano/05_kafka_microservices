@@ -14,14 +14,13 @@ todos los microservicios, e implementamos la securización específica para los 
  */
 @Component
 @EnableWebFluxSecurity
-public class AuthConfigSecurity extends CommonSecurityConfig {
+public class AuthSecurityConfig extends CommonSecurityConfig {
 
     @Autowired
-    public AuthConfigSecurity(AuthManager authManager, SecurityContextRepository securityContextRepository) {
+    public AuthSecurityConfig(AuthManager authManager, SecurityContextRepository securityContextRepository) {
         super(authManager, securityContextRepository);
     }
 
-    @Override
     protected void authorizeExchange(AuthorizeExchangeSpec authorizeExchange) {
         authorizeExchange.pathMatchers("/auth/login").permitAll()
                 .pathMatchers("/auth/register").permitAll()

@@ -75,8 +75,10 @@ services:
     container_name: stock-control-microservice
     ports:
       - "8083:8083"
+      - "5005:5005"
     environment:
       SPRING_PROFILES_ACTIVE: local
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     depends_on:
       mysql-server:
         condition: service_healthy
@@ -145,10 +147,8 @@ services:
     container_name: auth-microservice
     ports:
       - "8084:8084"
-      - "5005:5005"
     environment:
       SPRING_PROFILES_ACTIVE: local
-      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     depends_on:
       mysql-server:
         condition: service_healthy
