@@ -1,0 +1,39 @@
+package pjserrano.orders.controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import pjserrano.orders.service.IOrderService;
+import pjserrano.common.model.MyOrder;
+import reactor.core.publisher.Mono; // Importar Mono
+
+import java.util.logging.Logger;
+
+@RestController
+public class OrderController {
+
+    private final Logger log = Logger.getLogger(getClass().getName());
+
+    private final IOrderService orderService;
+
+    // Inyección de dependencias por constructor, es la forma preferida
+    @Autowired
+    public OrderController(IOrderService orderService) {
+        this.orderService = orderService;
+    }
+
+    @PostMapping(value = "${api.order.endpoint.path}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public Mono<ResponseEntity<Void>> processOrder(@RequestBody MyOrder order) {
+        // Llamamos al servicio que ahora devolverá un Mono<Void>
+        return orderService.processOrder(order)
+                .thenReturn(ResponseEntity.ok().<Void>build())
+                .onErrorResume(e -> { // Manejo de errores reactivo
+                    log.severe("Error al procesar el pedido: " + e.getMessage());
+                    return Mono.just(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build());
+                });
+    }
+}

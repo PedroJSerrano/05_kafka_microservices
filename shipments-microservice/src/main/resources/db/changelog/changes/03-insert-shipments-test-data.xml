@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+         http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="03-insert-shipments-test-data" author="pjserrano" context="dev, local">
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="1"/>
+            <column name="productCode" valueNumeric="101"/>
+            <column name="orderDate" value="2025-07-20 00:00:00"/>
+            <column name="address" value="Calle 1"/>
+            <column name="status" value="PENDING"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="2"/>
+            <column name="productCode" valueNumeric="102"/>
+            <column name="orderDate" value="2025-07-19 00:00:00"/>
+            <column name="address" value="Calle 2"/>
+            <column name="status" value="PENDING"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="3"/>
+            <column name="productCode" valueNumeric="103"/>
+            <column name="orderDate" value="2025-07-20 00:00:00"/>
+            <column name="address" value="Calle 3"/>
+            <column name="status" value="DELIVERED"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="4"/>
+            <column name="productCode" valueNumeric="104"/>
+            <column name="orderDate" value="2025-07-15 00:00:00"/>
+            <column name="address" value="Calle 4"/>
+            <column name="status" value="SHIPPED"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="5"/>
+            <column name="productCode" valueNumeric="105"/>
+            <column name="orderDate" value="2005-07-16 00:00:00"/>
+            <column name="address" value="Calle 5"/>
+            <column name="status" value="UNDELIVERED"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="6"/>
+            <column name="productCode" valueNumeric="106"/>
+            <column name="orderDate" value="2025-07-18 00:00:00"/>
+            <column name="address" value="Calle 6"/>
+            <column name="status" value="CANCELLED"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="7"/>
+            <column name="productCode" valueNumeric="107"/>
+            <column name="orderDate" value="2025-07-19 00:00:00"/>
+            <column name="address" value="Calle 7"/>
+            <column name="status" value="RETURNED"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="8"/>
+            <column name="productCode" valueNumeric="108"/>
+            <column name="orderDate" value="2025-07-17 00:00:00"/>
+            <column name="address" value="Calle 8"/>
+            <column name="status" value="SHIPPED"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="9"/>
+            <column name="productCode" valueNumeric="100"/>
+            <column name="orderDate" value="2025-07-21 12:44:45"/>
+            <column name="address" value="Mi calle"/>
+            <column name="status" value="PENDING"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="10"/>
+            <column name="productCode" valueNumeric="100"/>
+            <column name="orderDate" value="2025-07-21 12:55:26"/>
+            <column name="address" value="Mi calle"/>
+            <column name="status" value="PENDING"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="11"/>
+            <column name="productCode" valueNumeric="100"/>
+            <column name="orderDate" value="2025-07-22 08:11:11"/>
+            <column name="address" value="Mi calle"/>
+            <column name="status" value="PENDING"/>
+        </insert>
+        <insert tableName="shipments">
+            <column name="shipId" valueNumeric="12"/>
+            <column name="productCode" valueNumeric="100"/>
+            <column name="orderDate" value="2025-07-22 08:11:37"/>
+            <column name="address" value="Mi calle"/>
+            <column name="status" value="PENDING"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>
