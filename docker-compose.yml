@@ -50,39 +50,50 @@ services:
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       # Internamente los microservicios se conectarán a kafka-broker:9093
       # Externamente (desde el host, si lo necesitas) se conectarán a localhost:9092
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker:9093,PLAINTEXT_HOST://localhost:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker:9093
+      #,PLAINTEXT_HOST://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     depends_on:
       zookeeper:
         condition: service_healthy
     healthcheck: # <--- Añade esto
-      test: ["CMD", "cub kafka-ready -b localhost:9092 1 20"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      #test: ["CMD", "cub kafka-ready -b localhost:9092 1 20"]
+      test: ["CMD", "cub", "kafka-ready", "-b", "kafka-broker:9093", "1", "20"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
     networks:
       - app-network
 
   # Servicios de Microservicios Spring Boot
   stock-control-microservice:
     build:
-      context: ./stock_control_microservice
+      context: ./stock-control-microservice
       dockerfile: Dockerfile
     container_name: stock-control-microservice
     ports:
-      - "8000:8000"
+      - "8083:8083"
+      - "5005:5005"
     environment:
       SPRING_PROFILES_ACTIVE: local
+      JAVA_TOOL_OPTIONS: "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
     depends_on:
       mysql-server:
         condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8083/actuator/health" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - app-network
 
   shipments-microservice:
     build:
-      context: ./shipments_microservice
+      context: ./shipments-microservice
       dockerfile: Dockerfile
     container_name: shipments-microservice
     ports:
@@ -99,7 +110,7 @@ services:
 
   orders-microservice:
     build:
-      context: ./orders_microservice
+      context: ./orders-microservice
       dockerfile: Dockerfile
     container_name: orders-microservice
     ports:
@@ -114,7 +125,7 @@ services:
 
   order-processor-microservice:
     build:
-      context: ./order_processor_microservice
+      context: ./order-processor-microservice
       dockerfile: Dockerfile
     container_name: order-processor-microservice
     ports:
@@ -125,6 +136,21 @@ services:
       kafka-broker:
         condition: service_healthy
       stock-control-microservice: # Dependencia explícita ya que lo llama por WebClient
+        condition: service_healthy
+    networks:
+      - app-network
+
+  auth-microservice:
+    build:
+      context: ./auth-microservice
+      dockerfile: Dockerfile
+    container_name: auth-microservice
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: local
+    depends_on:
+      mysql-server:
         condition: service_healthy
     networks:
       - app-network
