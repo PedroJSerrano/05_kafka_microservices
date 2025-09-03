@@ -28,12 +28,16 @@ public class OrderServicesImpl implements IOrderService {
 
     @Override
     public Mono<Void> processOrder(MyOrder order) {
-        CompletableFuture<SendResult<String, MyOrder>> future = kafkaTemplate.send(topic, order);
-
-        return Mono.fromFuture(future)
-                .doOnSuccess(result -> log.info("Pedido " + result.getProducerRecord().value() +
-                        " registrado en el topic " + result.getProducerRecord().topic()))
-                .doOnError(ex -> log.severe("Error al producir el mensaje a Kafka: " + ex.getMessage()))
-                .then(); // `then()` convierte el Mono<SendResult> en Mono<Void>
+        return Mono.fromFuture(
+                    kafkaTemplate.send(topic, order)
+                )
+                .doOnSuccess(result ->
+                        log.info("Pedido " + result.getProducerRecord().value() +
+                        " registrado en el topic " + result.getProducerRecord().topic())
+                )
+                .doOnError(ex ->
+                        log.severe("Error al producir el mensaje a Kafka: " + ex.getMessage())
+                )
+                .then(); // then() convierte el Mono<SendResult> en Mono<Void>
     }
 }

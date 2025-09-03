@@ -11,7 +11,7 @@ services:
       - ./db/initdb.sql:/docker-entrypoint-initdb.d/initdb.sql
       - mysql_data:/var/lib/mysql
     ports:
-      - "3006:3306" # Mapea el puerto 3306 del contenedor al puerto 3006 de tu máquina host
+      - "3006:3306"
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
       interval: 10s
@@ -25,7 +25,7 @@ services:
     image: confluentinc/cp-zookeeper:7.6.1
     container_name: zookeeper
     ports:
-      - "2181:2181" # Mapea el puerto de Zookeeper
+      - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -42,23 +42,19 @@ services:
     image: confluentinc/cp-kafka:7.6.1
     container_name: kafka-broker
     ports:
-      - "9092:9092" # Mapea el puerto 9092 del contenedor al puerto 9092 de tu máquina host (para clientes externos como CLI)
-      # No necesitamos mapear el 9093 al host, es solo para comunicación interna de Docker
+      - "9092:9092"
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      # Internamente los microservicios se conectarán a kafka-broker:9093
-      # Externamente (desde el host, si lo necesitas) se conectarán a localhost:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker:9093
-      #,PLAINTEXT_HOST://localhost:9092
+      #,PLAINTEXT_HOST://localhost:9092 # <-- Descomentar si necesitas acceso desde el host vía 9092 directamente a Kafka
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
     depends_on:
       zookeeper:
         condition: service_healthy
-    healthcheck: # <--- Añade esto
-      #test: ["CMD", "cub kafka-ready -b localhost:9092 1 20"]
+    healthcheck:
       test: ["CMD", "cub", "kafka-ready", "-b", "kafka-broker:9093", "1", "20"]
       interval: 15s
       timeout: 10s
@@ -66,6 +62,59 @@ services:
       start_period: 30s
     networks:
       - app-network
+
+  # SERVICIO DE LOCALSTACK AÑADIDO
+  localstack:
+    container_name: localstack_main # Asigna un nombre específico al contenedor. Facilita la identificación en `docker ps`.
+    image: localstack/localstack:latest # Especifica la imagen Docker a usar. `:latest` asegura que siempre uses la versión más reciente.
+    ports:
+      # Mapeos de puertos desde el contenedor (derecha) al host (izquierda).
+      # Los servicios de LocalStack escuchan en estos puertos dentro del contenedor.
+      # Usar 127.0.0.1:xxx:yyy asegura que los puertos solo sean accesibles desde tu máquina local (localhost).
+      - "127.0.0.1:4510-4559:4510-4559" # Este es un rango de puertos que algunos servicios de LocalStack pueden usar si se configuran individualmente.
+      - "127.0.0.1:4566:4566"           # **¡Este es el puerto más importante!** Es el "unified endpoint" de LocalStack, donde la mayoría de los servicios (S3, SQS, DynamoDB, etc.) son accesibles. Tu AWS CLI apuntará a este puerto.
+      - "127.0.0.1:4583:4583"           # Puerto específico para la emulación de AWS API Gateway.
+    environment:
+      # Variables de entorno que se pasan al contenedor de LocalStack para su configuración.
+      - AWS_ACCESS_KEY_ID=test        # Credenciales ficticias. LocalStack no las valida por defecto.
+      - AWS_SECRET_ACCESS_KEY=test    # Son necesarias para que el AWS CLI no se queje, pero LocalStack las ignora.
+      - AWS_DEFAULT_REGION=eu-west-2  # Región por defecto. LocalStack emula todas las regiones, pero AWS CLI necesita una.
+      # Define qué servicios de AWS quieres iniciar dentro de LocalStack.
+      # Esto es crucial para optimizar el uso de recursos y el tiempo de inicio.
+      # ¡Añade o quita servicios según tus necesidades!
+      # Ejemplos comunes: s3, sqs, sns, lambda, dynamodb, iam, sts, cloudformation, logs, secretsmanager, ec2, apigateway.
+      - SERVICES=s3,iam,sts,cloudformation,logs,secretsmanager,apigateway,lambda
+      # Permite que LocalStack acceda al daemon de Docker de tu host.
+      # Es fundamental para servicios como AWS Lambda (para ejecutar funciones en contenedores dentro de LocalStack).
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      # Ayuda a evitar problemas de rutas largas en Windows asegurando que los archivos temporales se gestionen dentro del contenedor.
+      - HOST_TMP_FOLDER=/tmp/localstack
+      - DEBUG=1                     # Opcional: Establece esto en 1 para ver logs de depuración más detallados de LocalStack. Útil para troubleshooting.
+      - LOCALSTACK_HOST=localhost   # Asegura que LocalStack sepa su propia dirección (localhost) para callbacks internos o comunicaciones entre servicios.
+      # - EDGE_PORT=4566            # No es necesario especificar, 4566 es el puerto por defecto para el unified endpoint.
+    volumes:
+      # Volúmenes para persistencia de datos.
+      # Mapea un volumen con nombre (`localstack_data`) de Docker a una ruta dentro del contenedor.
+      # Esto asegura que los datos de tus servicios (ej. objetos S3, tablas DynamoDB) persistan incluso si reinicias el contenedor.
+      - "localstack_data:/var/lib/localstack"
+      # Monta el socket de Docker de tu host dentro del contenedor.
+      # Necesario para que LocalStack pueda crear contenedores hijos (ej. para ejecutar funciones Lambda).
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      # - "./.localstack:/var/lib/localstack" # Alternativa: si prefieres que los datos de persistencia se almacenen en una carpeta visible en tu host (en la misma ubicación que el docker-compose.yml). Descomenta esta línea y comenta la anterior si lo prefieres.
+    networks:
+      # Conecta el contenedor de LocalStack a la misma red Docker (`app-network`)
+      # que tus otros microservicios.
+      # Esto permite que tus microservicios (si están configurados para ello)
+      # puedan comunicarse con LocalStack usando nombres de servicio (ej. `http://localstack:4566`).
+      - app-network
+    # Healthcheck para verificar si LocalStack está listo.
+    # Llama al endpoint de salud de LocalStack.
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -f http://localhost:4566/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10 # Aumentar los reintentos
+      start_period: 60s # Darle más tiempo para arrancar
 
   # Servicios de Microservicios Spring Boot
   stock-control-microservice:
@@ -135,7 +184,7 @@ services:
     depends_on:
       kafka-broker:
         condition: service_healthy
-      stock-control-microservice: # Dependencia explícita ya que lo llama por WebClient
+      stock-control-microservice:
         condition: service_healthy
     networks:
       - app-network
@@ -157,6 +206,7 @@ services:
 
 volumes:
   mysql_data:
+  localstack_data: # Define el volumen para la persistencia de datos de LocalStack
 
 networks:
   app-network:
